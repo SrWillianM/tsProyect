@@ -1,0 +1,60 @@
+{% extends 'chat/base.html' %}
+
+{% block title %}Sala {{ room_name }}{% endblock %}
+
+{% block content %}
+<h1>Sala: #{{ room_name }}</h1>
+<p class="muted">MVP WebSocket con alias temporal (sin login).</p>
+
+<div id="chat-log" class="chat-log"></div>
+
+<form id="chat-form" class="chat-form">
+    <input id="chat-alias" type="text" placeholder="Tu alias" maxlength="50" value="Invitado">
+    <input id="chat-message" type="text" placeholder="Escribe un mensaje" maxlength="1000" required>
+    <button type="submit">Enviar</button>
+</form>
+
+<script>
+    const roomName = "{{ room_name|escapejs }}";
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const socketUrl = `${protocol}://${window.location.host}/ws/chat/${roomName}/`;
+
+    const chatLog = document.getElementById("chat-log");
+    const chatForm = document.getElementById("chat-form");
+    const aliasInput = document.getElementById("chat-alias");
+    const messageInput = document.getElementById("chat-message");
+
+    const socket = new WebSocket(socketUrl);
+
+    socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        const item = document.createElement("div");
+        item.className = "chat-item";
+
+        const time = new Date(data.timestamp).toLocaleTimeString();
+        item.innerHTML = `<strong>${data.alias}</strong> <span class="muted">(${time})</span><br>${data.message}`;
+        chatLog.appendChild(item);
+        chatLog.scrollTop = chatLog.scrollHeight;
+    };
+
+    socket.onclose = () => {
+        const item = document.createElement("div");
+        item.className = "chat-item muted";
+        item.textContent = "Conexión cerrada. Recarga la página para reconectar.";
+        chatLog.appendChild(item);
+    };
+
+    chatForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const payload = {
+            alias: aliasInput.value || "Anónimo",
+            message: messageInput.value,
+        };
+
+        socket.send(JSON.stringify(payload));
+        messageInput.value = "";
+        messageInput.focus();
+    });
+</script>
+{% endblock %}

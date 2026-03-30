@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TeamSpeak Clone MVP{% endblock %}</title>
+    <style>
+        :root {
+            --bg: #f3f1ec;
+            --panel: #ffffff;
+            --text: #222222;
+            --muted: #6b6b6b;
+            --accent: #0b5b55;
+            --accent-soft: #d8ece9;
+            --line: #d9d2c7;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+            background: radial-gradient(circle at top right, #efe6d8, var(--bg));
+        }
+
+        .layout {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 12px;
+            padding: 12px;
+        }
+
+        .sidebar,
+        .content {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 16px;
+        }
+
+        .sidebar h2,
+        .content h1 {
+            margin-top: 0;
+        }
+
+        .room-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .room-list a {
+            display: block;
+            text-decoration: none;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            color: var(--text);
+            background: #fbfaf8;
+        }
+
+        .room-list a:hover {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .chat-log {
+            height: 56vh;
+            overflow-y: auto;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 10px;
+            background: #fcfbf9;
+        }
+
+        .chat-item {
+            margin-bottom: 10px;
+        }
+
+        .chat-item strong {
+            color: var(--accent);
+        }
+
+        .chat-form {
+            display: grid;
+            grid-template-columns: 160px 1fr 120px;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        input,
+        button {
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        button {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #ffffff;
+            cursor: pointer;
+        }
+
+        button:hover {
+            filter: brightness(1.05);
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .chat-form {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <h2>Salas</h2>
+        <ul class="room-list">
+            {% for room in rooms %}
+                <li>
+                    <a href="{% url 'chat-room' room.name %}"># {{ room.name }}</a>
+                </li>
+            {% empty %}
+                <li class="muted">No hay salas creadas. Crea una en /admin.</li>
+            {% endfor %}
+        </ul>
+    </aside>
+
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+</body>
+</html>
