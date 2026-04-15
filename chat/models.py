@@ -1,8 +1,16 @@
 from django.db import models
+from django.conf import settings
 
 
 class Room(models.Model):
 	name = models.CharField(max_length=100, unique=True)
+	created_by = models.ForeignKey(
+		settings.AUTH_USER_MODEL,
+		on_delete=models.SET_NULL,
+		null=True,
+		blank=True,
+		related_name='created_rooms',
+	)
 	created_at = models.DateTimeField(auto_now_add=True)
 
 	class Meta:
@@ -20,6 +28,10 @@ class Message(models.Model):
 
 	class Meta:
 		ordering = ['timestamp']
+		indexes = [
+			models.Index(fields=['room', 'timestamp']),
+			models.Index(fields=['timestamp']),
+		]
 
 	def __str__(self):
 		return f'[{self.room.name}] {self.alias}: {self.content[:30]}'

@@ -6,6 +6,8 @@
 <h1>Sala: #{{ room_name }}</h1>
 <p class="muted">MVP WebSocket con alias temporal (sin login).</p>
 
+<p class="muted" id="presence-users">Usuarios activos: -</p>
+
 <div id="chat-log" class="chat-log"></div>
 
 <form id="chat-form" class="chat-form">
@@ -17,35 +19,156 @@
 <script>
     const roomName = "{{ room_name|escapejs }}";
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const socketUrl = `${protocol}://${window.location.host}/ws/chat/${roomName}/`;
+    const defaultAlias = "Invitado";
+    const socketUrl = `${protocol}://${window.location.host}/ws/chat/${roomName}/?alias=${encodeURIComponent(defaultAlias)}`;
 
     const chatLog = document.getElementById("chat-log");
     const chatForm = document.getElementById("chat-form");
     const aliasInput = document.getElementById("chat-alias");
     const messageInput = document.getElementById("chat-message");
+    const presenceUsers = document.getElementById("presence-users");
+
+    const PAGE_SIZE = 30;
+    let offset = 0;
+    let hasMore = true;
+    let loadingHistory = false;
+    const renderedMessageIds = new Set();
+    let presenceList = [];
+
+    function formatTime(value) {
+        return new Date(value).toLocaleTimeString();
+    }
+
+    function renderPresence() {
+        const users = presenceList.length ? presenceList.join(", ") : "-";
+        presenceUsers.textContent = `Usuarios activos: ${users}`;
+    }
+
+    function addSystemMessage(text) {
+        const item = document.createElement("div");
+        item.className = "chat-item muted";
+        item.textContent = text;
+        chatLog.appendChild(item);
+    }
+
+    function renderMessage(data, prepend = false) {
+        if (data.id && renderedMessageIds.has(data.id)) {
+            return;
+        }
+        if (data.id) {
+            renderedMessageIds.add(data.id);
+        }
+
+        const item = document.createElement("div");
+        item.className = "chat-item";
+        const sourceTag = data.source === "history" ? "hist" : "live";
+        item.innerHTML = `<strong>${data.alias}</strong> <span class="muted">(${formatTime(data.timestamp)} | ${sourceTag})</span><br>${data.message}`;
+
+        if (prepend) {
+            chatLog.insertBefore(item, chatLog.firstChild);
+        } else {
+            chatLog.appendChild(item);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+    }
+
+    async function loadHistory() {
+        if (loadingHistory || !hasMore) {
+            return;
+        }
+
+        loadingHistory = true;
+        const oldHeight = chatLog.scrollHeight;
+        try {
+            const response = await fetch(`/api/rooms/${encodeURIComponent(roomName)}/messages/?limit=${PAGE_SIZE}&offset=${offset}`);
+            if (!response.ok) {
+                throw new Error("No se pudo cargar historial");
+            }
+
+            const data = await response.json();
+            for (const msg of data.messages) {
+                renderMessage(msg, true);
+            }
+
+            offset += data.messages.length;
+            hasMore = Boolean(data.has_more);
+
+            if (offset === data.messages.length) {
+                chatLog.scrollTop = chatLog.scrollHeight;
+            } else {
+                const newHeight = chatLog.scrollHeight;
+                chatLog.scrollTop = newHeight - oldHeight;
+            }
+        } catch (error) {
+            addSystemMessage("No se pudo cargar historial.");
+        } finally {
+            loadingHistory = false;
+        }
+    }
 
     const socket = new WebSocket(socketUrl);
 
     socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        const item = document.createElement("div");
-        item.className = "chat-item";
 
-        const time = new Date(data.timestamp).toLocaleTimeString();
-        item.innerHTML = `<strong>${data.alias}</strong> <span class="muted">(${time})</span><br>${data.message}`;
-        chatLog.appendChild(item);
-        chatLog.scrollTop = chatLog.scrollHeight;
+        if (data.event === "message") {
+            renderMessage(data);
+            return;
+        }
+
+        if (data.event === "presence_snapshot") {
+            presenceList = data.users || [];
+            renderPresence();
+            return;
+        }
+
+        if (data.event === "user_joined") {
+            if (data.alias && !presenceList.includes(data.alias)) {
+                presenceList.push(data.alias);
+                presenceList.sort();
+            }
+            renderPresence();
+            addSystemMessage(`${data.alias} entro a la sala.`);
+            return;
+        }
+
+        if (data.event === "user_left") {
+            presenceList = presenceList.filter((name) => name !== data.alias);
+            renderPresence();
+            addSystemMessage(`${data.alias} salio de la sala.`);
+            return;
+        }
+
+        if (data.event === "throttled") {
+            addSystemMessage(data.detail || "Estas enviando mensajes demasiado rapido.");
+        }
     };
 
     socket.onclose = () => {
-        const item = document.createElement("div");
-        item.className = "chat-item muted";
-        item.textContent = "Conexión cerrada. Recarga la página para reconectar.";
-        chatLog.appendChild(item);
+        addSystemMessage("Conexion cerrada. Recarga la pagina para reconectar.");
     };
+
+    chatLog.addEventListener("scroll", () => {
+        if (chatLog.scrollTop <= 20) {
+            loadHistory();
+        }
+    });
+
+    setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ event: "ping" }));
+        }
+    }, 15000);
+
+    loadHistory();
 
     chatForm.addEventListener("submit", (event) => {
         event.preventDefault();
+
+        if (socket.readyState !== WebSocket.OPEN) {
+            addSystemMessage("No hay conexion WebSocket activa.");
+            return;
+        }
 
         const payload = {
             alias: aliasInput.value || "Anónimo",
