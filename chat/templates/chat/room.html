@@ -1,10 +1,19 @@
 {% extends 'chat/base.html' %}
+{% load static %}
 
 {% block title %}Sala {{ room_name }}{% endblock %}
 
 {% block content %}
 <h1>Sala: #{{ room_name }}</h1>
 <p class="muted">MVP WebSocket con alias temporal (sin login).</p>
+
+<!-- Controles de voz -->
+<div id="voice-controls" class="voice-controls" style="margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 8px;">
+    <button id="btn-voice-toggle" class="btn-voice" style="padding: 8px 16px; cursor: pointer;">🎤 Conectar Voz</button>
+    <button id="btn-mute" class="btn-voice" style="display:none; padding: 8px 16px; cursor: pointer;">🔊 Mute</button>
+    <span id="voice-status" class="muted" style="margin-left: 10px;"></span>
+    <div id="voice-users" class="voice-users" style="margin-top: 8px; font-size: 0.9em;"></div>
+</div>
 
 <p class="muted" id="presence-users">Usuarios activos: -</p>
 
@@ -19,8 +28,10 @@
 <script>
     const roomName = "{{ room_name|escapejs }}";
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const defaultAlias = "Invitado";
+    // Generar un alias único basado en nombre + timestamp
+    const defaultAlias = "Invitado" + "_" + Date.now();
     const socketUrl = `${protocol}://${window.location.host}/ws/chat/${roomName}/?alias=${encodeURIComponent(defaultAlias)}`;
+    const voiceSocketUrl = `${protocol}://${window.location.host}/ws/voice/${roomName}/?alias=${encodeURIComponent(defaultAlias)}&voice=true`;
 
     const chatLog = document.getElementById("chat-log");
     const chatForm = document.getElementById("chat-form");
@@ -179,5 +190,61 @@
         messageInput.value = "";
         messageInput.focus();
     });
+    
+    // ==========================================
+    // VoiceChat - WebRTC Voice Controls
+    // ==========================================
+    let voiceChat = null;
+
+    document.getElementById('btn-voice-toggle').addEventListener('click', async function() {
+        if (!voiceChat) {
+            // Crear instancia de VoiceChat
+            voiceChat = new VoiceChat({
+                roomName: roomName,
+                alias: defaultAlias,
+                wsUrl: voiceSocketUrl,
+                onVoiceStateChange: function(state) {
+                    console.log('Voice state:', state);
+                    document.getElementById('btn-mute').style.display = state.connected ? 'inline-block' : 'none';
+                    document.getElementById('btn-voice-toggle').textContent = state.connected ? '🔌 Desconectar' : '🎤 Conectar Voz';
+                    document.getElementById('voice-status').textContent = state.connected ? 'Conectado a voz' : '';
+                },
+                onUserJoin: function(users) {
+                    document.getElementById('voice-users').textContent = '👥 En voz: ' + (users.length ? users.join(', ') : 'Nadie');
+                },
+                onUserLeave: function(users) {
+                    console.log('Usuario salió de voz:', users);
+                },
+                onError: function(error) {
+                    console.error('Voice error:', error);
+                    addSystemMessage('Error de voz: ' + error);
+                }
+            });
+            
+            const connected = await voiceChat.connect();
+            if (!connected) {
+                addSystemMessage('No se pudo conectar al chat de voz.');
+                voiceChat = null;
+            }
+        } else {
+            voiceChat.disconnect();
+            voiceChat = null;
+            document.getElementById('btn-mute').style.display = 'none';
+            document.getElementById('btn-voice-toggle').textContent = '🎤 Conectar Voz';
+            document.getElementById('voice-status').textContent = '';
+            document.getElementById('voice-users').textContent = '';
+        }
+    });
+
+    document.getElementById('btn-mute').addEventListener('click', function() {
+        if (voiceChat) {
+            const muted = voiceChat.toggleMute();
+            this.textContent = muted ? '🔇 Unmute' : '🔊 Mute';
+        }
+    });
+    
 </script>
+<!-- WebRTC Voice Chat (CDN) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/simple-peer/9.11.1/simplepeer.min.js"></script>
+<script src="{% static 'js/voice-chat.js' %}"></script>
 {% endblock %}
