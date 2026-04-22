@@ -1,0 +1,14 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        args: [--check, --diff, --line-length=88]
+        exclude: ^(.*?/)?(migrations|\.venv|venv|env)/
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.1.1
+    hooks:
+      - id: flake8
+        args: [--config=.flake8]
+        exclude: ^(.*?/)?(migrations|\.venv|venv|env)/
