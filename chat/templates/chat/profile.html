@@ -1,0 +1,65 @@
+{% extends 'chat/base.html' %}
+
+{% block title %}Perfil | VozChat{% endblock %}
+
+{% block content %}
+<section class="card" style="max-width: 640px; margin: 0 auto;">
+    <h1>Perfil</h1>
+    <p class="muted">Cambia tu apodo y tu foto para que todo se vea limpio y coherente.</p>
+
+    <div style="display:flex; gap:16px; align-items:center; margin: 18px 0; flex-wrap:wrap;">
+        {% if profile.avatar %}
+            <img class="avatar" style="width:120px; height:120px; border-radius:28px;" src="{{ profile.avatar.url }}" alt="{{ profile.nickname }}">
+        {% else %}
+            <div class="avatar-fallback" style="width:120px; height:120px; font-size:2rem; border-radius:28px;">{{ profile.nickname|slice:":1"|upper }}</div>
+        {% endif %}
+        <div>
+            <div class="muted">Nombre visible</div>
+            <strong style="font-size:1.1rem;">{{ profile.nickname }}</strong>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="form-grid">
+        {% csrf_token %}
+        <div class="field-grid">
+            <label for="id_nickname">Apodo</label>
+            {{ form.nickname }}
+            {% if form.nickname.errors %}<div class="notice">{{ form.nickname.errors }}</div>{% endif %}
+        </div>
+        <div class="field-grid">
+            <label for="id_avatar">Foto de perfil</label>
+            <input id="id_avatar" name="avatar" type="file" accept="image/*" hidden>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <button id="btn-avatar" type="button" class="btn btn-ghost">🖼️ Cambiar foto</button>
+                <small id="avatar-name" class="muted">No se ha elegido imagen.</small>
+            </div>
+            {% if form.avatar.errors %}<div class="notice">{{ form.avatar.errors }}</div>{% endif %}
+        </div>
+        {% if form.non_field_errors %}
+            <div class="notice">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <button type="submit">Guardar cambios</button>
+    </form>
+
+    <script>
+        const avatarInput = document.getElementById('id_avatar');
+        const avatarButton = document.getElementById('btn-avatar');
+        const avatarName = document.getElementById('avatar-name');
+
+        function updateAvatarLabel() {
+            if (!avatarInput || !avatarName) {
+                return;
+            }
+
+            avatarName.textContent = avatarInput.files && avatarInput.files[0]
+                ? avatarInput.files[0].name
+                : 'No se ha elegido imagen.';
+        }
+
+        if (avatarButton && avatarInput) {
+            avatarButton.addEventListener('click', () => avatarInput.click());
+            avatarInput.addEventListener('change', updateAvatarLabel);
+        }
+    </script>
+</section>
+{% endblock %}

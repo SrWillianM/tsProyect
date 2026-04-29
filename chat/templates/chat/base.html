@@ -3,150 +3,441 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}TeamSpeak Clone MVP{% endblock %}</title>
+    <title>{% block title %}TsPy{% endblock %}</title>
     <style>
         :root {
-            --bg: #f3f1ec;
-            --panel: #ffffff;
-            --text: #222222;
-            --muted: #6b6b6b;
-            --accent: #0b5b55;
-            --accent-soft: #d8ece9;
-            --line: #d9d2c7;
+            --bg: #0b0f17;
+            --bg-2: #101725;
+            --panel: rgba(17, 24, 39, 0.9);
+            --panel-soft: rgba(23, 31, 46, 0.92);
+            --text: #edf2ff;
+            --muted: #8d97ad;
+            --line: rgba(255, 255, 255, 0.08);
+            --accent: #5eead4;
+            --accent-strong: #2dd4bf;
+            --warn: #f59e0b;
+            --shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
         }
 
         * {
             box-sizing: border-box;
         }
 
+        html, body {
+            min-height: 100%;
+        }
+
         body {
             margin: 0;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
             color: var(--text);
-            background: radial-gradient(circle at top right, #efe6d8, var(--bg));
+            background:
+                radial-gradient(circle at top left, rgba(94, 234, 212, 0.13), transparent 32%),
+                radial-gradient(circle at top right, rgba(45, 212, 191, 0.08), transparent 28%),
+                linear-gradient(145deg, var(--bg), var(--bg-2));
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
 
-        .layout {
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .app-shell {
             min-height: 100vh;
             display: grid;
-            grid-template-columns: 280px 1fr;
-            gap: 12px;
-            padding: 12px;
+            grid-template-rows: auto 1fr;
         }
 
-        .sidebar,
-        .content {
-            background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: 14px;
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--line);
+            backdrop-filter: blur(16px);
+            background: rgba(8, 12, 19, 0.66);
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .brand strong {
+            letter-spacing: 0.02em;
+            text-transform: none;
+            font-size: 1.15rem;
+            color: var(--text);
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 320px minmax(0, 1fr);
+            gap: 16px;
             padding: 16px;
         }
 
-        .sidebar h2,
-        .content h1 {
-            margin-top: 0;
+        .workspace--single {
+            grid-template-columns: minmax(0, 1fr);
+            align-items: center;
+            min-height: calc(100vh - 92px);
         }
 
-        .room-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
+        .sidebar,
+        .content,
+        .card,
+        .channel-box,
+        .form-box {
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar {
+            padding: 16px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 14px;
+            min-height: calc(100vh - 92px);
         }
 
-        .room-list a {
-            display: block;
-            text-decoration: none;
-            padding: 10px 12px;
-            border-radius: 10px;
-            border: 1px solid var(--line);
-            color: var(--text);
-            background: #fbfaf8;
+        .content {
+            min-width: 0;
+            padding: 20px;
+            background: linear-gradient(180deg, rgba(17, 24, 39, 0.92), rgba(12, 17, 26, 0.92));
         }
 
-        .room-list a:hover {
-            border-color: var(--accent);
-            background: var(--accent-soft);
+        .sidebar h2,
+        .sidebar h3,
+        .content h1,
+        .content h2,
+        .content h3 {
+            margin: 0 0 10px;
         }
 
         .muted {
             color: var(--muted);
         }
 
-        .chat-log {
-            height: 56vh;
-            overflow-y: auto;
+        .pill,
+        .btn,
+        button,
+        input,
+        select,
+        textarea {
+            border-radius: 14px;
+        }
+
+        .pill,
+        .btn,
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 1px solid transparent;
+            padding: 10px 14px;
+            font-weight: 600;
+            transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease, background 150ms ease;
+        }
+
+        .pill:hover,
+        .btn:hover,
+        button:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-primary,
+        button {
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #07111a;
+            box-shadow: 0 10px 24px rgba(45, 212, 191, 0.2);
+        }
+
+        .btn-ghost {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: var(--line);
+            color: var(--text);
+        }
+
+        .btn-warn {
+            background: rgba(245, 158, 11, 0.14);
+            border-color: rgba(245, 158, 11, 0.24);
+            color: #fde68a;
+        }
+
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            border-radius: 18px;
+            background: var(--panel-soft);
             border: 1px solid var(--line);
-            border-radius: 10px;
-            padding: 10px;
-            background: #fcfbf9;
         }
 
-        .chat-item {
-            margin-bottom: 10px;
+        .avatar,
+        .avatar-fallback {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            object-fit: cover;
+            background: linear-gradient(135deg, rgba(94, 234, 212, 0.35), rgba(45, 212, 191, 0.16));
         }
 
-        .chat-item strong {
+        .avatar-fallback {
+            display: grid;
+            place-items: center;
+            color: #06131c;
+            font-weight: 800;
+        }
+
+        .channel-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .channel-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .channel-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+        }
+
+        .channel-link:hover {
+            border-color: rgba(94, 234, 212, 0.4);
+            background: rgba(94, 234, 212, 0.07);
+        }
+
+        .channel-link small {
+            color: var(--muted);
+        }
+
+        .channel-badge {
+            padding: 4px 9px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            background: rgba(94, 234, 212, 0.12);
             color: var(--accent);
         }
 
-        .chat-form {
+        .message-list,
+        .form-box,
+        .card,
+        .channel-box {
+            padding: 18px;
+        }
+
+        .notice-list {
             display: grid;
-            grid-template-columns: 160px 1fr 120px;
-            gap: 8px;
-            margin-top: 12px;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .notice {
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--line);
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .field-grid {
+            display: grid;
+            gap: 10px;
         }
 
         input,
-        button {
-            border-radius: 10px;
+        select,
+        textarea {
+            width: 100%;
             border: 1px solid var(--line);
-            padding: 10px;
-            font-size: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+            padding: 12px 14px;
+            outline: none;
         }
 
-        button {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: #ffffff;
-            cursor: pointer;
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: rgba(94, 234, 212, 0.45);
+            box-shadow: 0 0 0 4px rgba(94, 234, 212, 0.08);
         }
 
-        button:hover {
-            filter: brightness(1.05);
+        .empty-state {
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px dashed rgba(141, 151, 173, 0.35);
+            color: var(--muted);
         }
 
-        @media (max-width: 900px) {
-            .layout {
+        .split-layout {
+            display: grid;
+            gap: 16px;
+        }
+
+        @media (max-width: 980px) {
+            .workspace {
                 grid-template-columns: 1fr;
             }
 
-            .chat-form {
-                grid-template-columns: 1fr;
+            .sidebar {
+                min-height: auto;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .workspace {
+                padding: 12px;
             }
         }
     </style>
 </head>
 <body>
-<div class="layout">
-    <aside class="sidebar">
-        <h2>Salas</h2>
-        <ul class="room-list">
-            {% for room in rooms %}
-                <li>
-                    <a href="{% url 'chat-room' room.name %}"># {{ room.name }}</a>
-                </li>
-            {% empty %}
-                <li class="muted">No hay salas creadas. Crea una en /admin.</li>
-            {% endfor %}
-        </ul>
-    </aside>
+<div class="app-shell">
+    <header class="topbar">
+        <div class="brand">
+            <strong>TsPy</strong>
+        </div>
+        <div class="topbar-actions">
+            {% if user.is_authenticated %}
+                <a class="btn btn-ghost" href="{% url 'profile' %}">Perfil</a>
+                <a class="btn btn-ghost" href="{% url 'logout' %}">Salir</a>
+            {% else %}
+                <a class="btn btn-ghost" href="{% url 'login' %}">Entrar</a>
+                <a class="btn btn-primary" href="{% url 'signup' %}">Crear cuenta</a>
+            {% endif %}
+        </div>
+    </header>
 
-    <main class="content">
-        {% block content %}{% endblock %}
-    </main>
+    <div class="workspace{% if not chat_rooms and not voice_rooms %} workspace--single{% endif %}">
+        {% if chat_rooms or voice_rooms %}
+            <aside class="sidebar">
+                {% if profile %}
+                    <div class="user-card">
+                        {% if profile.avatar %}
+                            <img class="avatar" src="{{ profile.avatar.url }}" alt="{{ profile.nickname }}">
+                        {% else %}
+                            <div class="avatar-fallback">{{ profile.nickname|slice:":1"|upper }}</div>
+                        {% endif %}
+                        <div>
+                            <div><strong>{{ profile.nickname }}</strong></div>
+                            <div class="muted">{{ user.get_username }}</div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if is_voice_room %}
+                    <div class="channel-box" style="display:grid; gap:12px;">
+                        <div>
+                            <div class="muted">Voz</div>
+                            <strong>{{ room.name }}</strong>
+                        </div>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <button id="btn-voice-toggle" type="button">🎤 Conectar voz</button>
+                            <button id="btn-mute" type="button" style="display:none;">🔊 Silenciar</button>
+                            <span id="voice-status" class="muted"></span>
+                        </div>
+                        <div id="voice-sidebar-users" class="empty-state" style="padding:12px;">
+                            Conectados: nadie por ahora
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="channel-group">
+                    <h3>Canales de chat</h3>
+                    <ul class="channel-list">
+                        {% for room in chat_rooms %}
+                            <li>
+                                <a class="channel-link" href="{% url 'chat-room' room.name %}">
+                                    <span># {{ room.name }}</span>
+                                    <small>chat</small>
+                                </a>
+                            </li>
+                        {% empty %}
+                            <li class="empty-state">No hay canales de chat todavía.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="channel-group">
+                    <h3>Canales de voz</h3>
+                    <ul class="channel-list">
+                        {% for room in voice_rooms %}
+                            <li>
+                                <a class="channel-link" href="{% url 'chat-room' room.name %}">
+                                    <span>🔊 {{ room.name }}</span>
+                                    <small>voz</small>
+                                </a>
+                            </li>
+                        {% empty %}
+                            <li class="empty-state">No hay canales de voz todavía.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                {% if room_form %}
+                    <div class="form-box">
+                        <h3>Crear canal</h3>
+                        <form class="form-grid" method="post" action="{% url 'create-room' %}">
+                            {% csrf_token %}
+                            <div class="field-grid">
+                                {{ room_form.name }}
+                                {{ room_form.kind }}
+                            </div>
+                            <button type="submit">Crear</button>
+                        </form>
+                    </div>
+                {% endif %}
+            </aside>
+        {% endif %}
+
+        <main class="content{% if not chat_rooms and not voice_rooms %} content--centered{% endif %}">
+            {% if messages %}
+                <div class="notice-list">
+                    {% for message in messages %}
+                        <div class="notice">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
 </div>
 </body>
 </html>

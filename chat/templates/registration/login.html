@@ -1,0 +1,32 @@
+{% extends 'chat/base.html' %}
+
+{% block title %}Entrar | VozChat{% endblock %}
+
+{% block content %}
+<section style="min-height: calc(100vh - 180px); display: grid; place-items: center; width: 100%;">
+<div class="card" style="max-width: 520px; width: min(520px, 100%); margin: 0 auto;">
+    <h1>Bienvenido de vuelta</h1>
+    <p class="muted">Entra para ver tus canales, tu perfil y tu voz.</p>
+
+    <form method="post" class="form-grid" style="margin-top: 18px;">
+        {% csrf_token %}
+        <div class="field-grid">
+            <label for="id_username">Usuario</label>
+            {{ form.username }}
+            {% if form.username.errors %}<div class="muted">{{ form.username.errors }}</div>{% endif %}
+        </div>
+        <div class="field-grid">
+            <label for="id_password">Contraseña</label>
+            {{ form.password }}
+            {% if form.password.errors %}<div class="muted">{{ form.password.errors }}</div>{% endif %}
+        </div>
+        {% if form.non_field_errors %}
+            <div class="notice">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <button type="submit">Entrar</button>
+    </form>
+
+    <p class="muted" style="margin-top: 14px;">¿No tienes cuenta? <a href="{% url 'signup' %}">Crear una</a></p>
+</div>
+</section>
+{% endblock %}

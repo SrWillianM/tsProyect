@@ -1,254 +1,653 @@
 {% extends 'chat/base.html' %}
 {% load static %}
 
-{% block title %}Sala {{ room_name }}{% endblock %}
+{% block title %}{{ room.name }} | VozChat{% endblock %}
 
 {% block content %}
-<h1>Sala: #{{ room_name }}</h1>
-<p class="muted">MVP WebSocket con alias temporal (sin login).</p>
+<section class="card">
+    <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+        <div>
+            <div class="channel-badge">{{ room.get_kind_display }}</div>
+            <h1 style="margin-top:10px;">{{ room.name }}</h1>
+            <p class="muted">{% if is_voice_room %}Canal de voz dedicado.{% else %}Canal de chat con historial y presencia.{% endif %}</p>
+        </div>
+        <div class="channel-box">
+            <div class="muted">Apodo activo</div>
+            <strong>{{ display_name }}</strong>
+        </div>
+    </div>
+</section>
 
-<!-- Controles de voz -->
-<div id="voice-controls" class="voice-controls" style="margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 8px;">
-    <button id="btn-voice-toggle" class="btn-voice" style="padding: 8px 16px; cursor: pointer;">🎤 Conectar Voz</button>
-    <button id="btn-mute" class="btn-voice" style="display:none; padding: 8px 16px; cursor: pointer;">🔊 Mute</button>
-    <span id="voice-status" class="muted" style="margin-left: 10px;"></span>
-    <div id="voice-users" class="voice-users" style="margin-top: 8px; font-size: 0.9em;"></div>
-</div>
+{% if is_voice_room %}
+    <section class="card" style="margin-top:16px;">
+        <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom: 12px;">
+            <div>
+                <h2>Chat del canal de voz</h2>
+                <p class="muted" id="presence-users">Usuarios activos: -</p>
+            </div>
+            <div class="channel-box">
+                <span class="muted">También puedes escribir aquí sin salir del canal.</span>
+            </div>
+        </div>
 
-<p class="muted" id="presence-users">Usuarios activos: -</p>
+        <div id="chat-log" class="message-list" style="min-height: 42vh; max-height: 42vh; overflow-y:auto;"></div>
 
-<div id="chat-log" class="chat-log"></div>
+        <form id="chat-form" class="form-grid" style="margin-top:16px; grid-template-columns: 1fr auto; align-items:end;">
+            {% csrf_token %}
+            <div class="field-grid">
+                <input id="chat-message" type="text" placeholder="Escribe un mensaje" maxlength="1000">
+                <input id="chat-file" type="file" hidden>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <button id="btn-attach" type="button" class="btn btn-ghost">📎 Adjuntar</button>
+                    <small id="chat-file-name" class="muted">GIF, imágenes o archivos.</small>
+                </div>
+            </div>
+            <button type="submit">Enviar</button>
+        </form>
+    </section>
+{% else %}
+    <section class="card" style="margin-top:16px;">
+        <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom: 12px;">
+            <div>
+                <h2>Chat</h2>
+                <p class="muted" id="presence-users">Usuarios activos: -</p>
+            </div>
+            <div class="channel-box">
+                <span class="muted">Tu mensaje se firma con tu apodo.</span>
+            </div>
+        </div>
 
-<form id="chat-form" class="chat-form">
-    <input id="chat-alias" type="text" placeholder="Tu alias" maxlength="50" value="Invitado">
-    <input id="chat-message" type="text" placeholder="Escribe un mensaje" maxlength="1000" required>
-    <button type="submit">Enviar</button>
-</form>
+        <div id="chat-log" class="message-list" style="min-height: 52vh; max-height: 52vh; overflow-y:auto;"></div>
+
+        <form id="chat-form" class="form-grid" style="margin-top:16px; grid-template-columns: 1fr auto; align-items:end;">
+            {% csrf_token %}
+            <div class="field-grid">
+                <input id="chat-message" type="text" placeholder="Escribe un mensaje" maxlength="1000">
+                <input id="chat-file" type="file" hidden>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <button id="btn-attach" type="button" class="btn btn-ghost">📎 Adjuntar</button>
+                    <small id="chat-file-name" class="muted">GIF, imágenes o archivos.</small>
+                </div>
+            </div>
+            <button type="submit">Enviar</button>
+        </form>
+    </section>
+{% endif %}
 
 {{ webrtc_ice_servers|json_script:"webrtc-ice-servers" }}
 
 <script>
     const roomName = "{{ room_name|escapejs }}";
+    const displayName = "{{ display_name|escapejs }}";
+    const isVoiceRoom = {{ is_voice_room|yesno:'true,false' }};
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
     const webrtcIceServers = JSON.parse(document.getElementById("webrtc-ice-servers").textContent);
-    // Generar un alias único basado en nombre + timestamp
-    const defaultAlias = "Invitado" + "_" + Date.now();
-    const socketUrl = `${protocol}://${window.location.host}/ws/chat/${roomName}/?alias=${encodeURIComponent(defaultAlias)}`;
-    const voiceSocketUrl = `${protocol}://${window.location.host}/ws/voice/${roomName}/?alias=${encodeURIComponent(defaultAlias)}&voice=true`;
-
-    const chatLog = document.getElementById("chat-log");
-    const chatForm = document.getElementById("chat-form");
-    const aliasInput = document.getElementById("chat-alias");
-    const messageInput = document.getElementById("chat-message");
-    const presenceUsers = document.getElementById("presence-users");
-
-    const PAGE_SIZE = 30;
-    let offset = 0;
-    let hasMore = true;
-    let loadingHistory = false;
-    const renderedMessageIds = new Set();
-    let presenceList = [];
+    const socketUrl = `${protocol}://${window.location.host}/ws/chat/${roomName}/?alias=${encodeURIComponent(displayName)}`;
+    const voiceSocketUrl = `${protocol}://${window.location.host}/ws/voice/${roomName}/?alias=${encodeURIComponent(displayName)}&voice=true`;
+    const attachmentUploadUrl = `/api/rooms/${encodeURIComponent(roomName)}/attachments/`;
+    const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
 
     function formatTime(value) {
         return new Date(value).toLocaleTimeString();
     }
 
-    function renderPresence() {
-        const users = presenceList.length ? presenceList.join(", ") : "-";
-        presenceUsers.textContent = `Usuarios activos: ${users}`;
+    function escapeHtml(value) {
+        return (value || '').replace(/[&<>'"]/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[char]));
     }
 
-    function addSystemMessage(text) {
-        const item = document.createElement("div");
-        item.className = "chat-item muted";
-        item.textContent = text;
-        chatLog.appendChild(item);
+    function buildAttachmentNode(data) {
+        if (!data.attachment_url) {
+            return null;
+        }
+
+        const wrap = document.createElement('div');
+        wrap.className = 'empty-state';
+        wrap.style.marginTop = '10px';
+        wrap.style.padding = '12px';
+        wrap.style.borderStyle = 'solid';
+
+        const link = document.createElement('a');
+        link.href = data.attachment_url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = data.attachment_name || 'Adjunto';
+
+        if (data.attachment_is_image) {
+            const image = document.createElement('img');
+            image.src = data.attachment_url;
+            image.alt = data.attachment_name || 'Adjunto';
+            image.style.display = 'block';
+            image.style.maxWidth = '280px';
+            image.style.maxHeight = '280px';
+            image.style.marginTop = '10px';
+            image.style.borderRadius = '14px';
+            image.loading = 'lazy';
+            wrap.appendChild(link);
+            wrap.appendChild(image);
+            return wrap;
+        }
+
+        wrap.appendChild(link);
+        return wrap;
     }
 
-    function renderMessage(data, prepend = false) {
-        if (data.id && renderedMessageIds.has(data.id)) {
-            return;
-        }
-        if (data.id) {
-            renderedMessageIds.add(data.id);
+    function buildMessageNode(data) {
+        const item = document.createElement('div');
+        item.className = 'notice';
+
+        const header = document.createElement('div');
+        const alias = document.createElement('strong');
+        alias.textContent = data.alias;
+
+        const meta = document.createElement('span');
+        meta.className = 'muted';
+        meta.textContent = ` (${formatTime(data.timestamp)} · ${data.source === 'history' ? 'hist' : 'live'})`;
+
+        header.appendChild(alias);
+        header.appendChild(meta);
+        item.appendChild(header);
+
+        if (data.message) {
+            const text = document.createElement('div');
+            text.style.marginTop = '8px';
+            text.innerHTML = escapeHtml(data.message).replace(/\n/g, '<br>');
+            item.appendChild(text);
         }
 
-        const item = document.createElement("div");
-        item.className = "chat-item";
-        const sourceTag = data.source === "history" ? "hist" : "live";
-        item.innerHTML = `<strong>${data.alias}</strong> <span class="muted">(${formatTime(data.timestamp)} | ${sourceTag})</span><br>${data.message}`;
+        const attachmentNode = buildAttachmentNode(data);
+        if (attachmentNode) {
+            item.appendChild(attachmentNode);
+        }
 
-        if (prepend) {
-            chatLog.insertBefore(item, chatLog.firstChild);
-        } else {
+        return item;
+    }
+
+    if (!isVoiceRoom) {
+        const chatLog = document.getElementById("chat-log");
+        const chatForm = document.getElementById("chat-form");
+        const messageInput = document.getElementById("chat-message");
+        const fileInput = document.getElementById("chat-file");
+        const presenceUsers = document.getElementById("presence-users");
+        const attachButton = document.getElementById("btn-attach");
+        const fileNameLabel = document.getElementById("chat-file-name");
+        function updateFileLabel() {
+            if (!fileInput || !fileNameLabel) {
+                return;
+            }
+
+            fileNameLabel.textContent = fileInput.files && fileInput.files[0]
+                ? fileInput.files[0].name
+                : 'GIF, imágenes o archivos.';
+        }
+
+        const PAGE_SIZE = 30;
+        let offset = 0;
+        let hasMore = true;
+        let loadingHistory = false;
+        const renderedMessageIds = new Set();
+        let presenceList = [];
+
+        function renderPresence() {
+            presenceUsers.textContent = `Usuarios activos: ${presenceList.length ? presenceList.join(", ") : "-"}`;
+        }
+
+        function addSystemMessage(text) {
+            const item = document.createElement("div");
+            item.className = "notice";
+            item.textContent = text;
             chatLog.appendChild(item);
-            chatLog.scrollTop = chatLog.scrollHeight;
-        }
-    }
-
-    async function loadHistory() {
-        if (loadingHistory || !hasMore) {
-            return;
         }
 
-        loadingHistory = true;
-        const oldHeight = chatLog.scrollHeight;
-        try {
-            const response = await fetch(`/api/rooms/${encodeURIComponent(roomName)}/messages/?limit=${PAGE_SIZE}&offset=${offset}`);
-            if (!response.ok) {
-                throw new Error("No se pudo cargar historial");
+        function renderMessage(data, prepend = false) {
+            if (data.id && renderedMessageIds.has(data.id)) {
+                return;
+            }
+            if (data.id) {
+                renderedMessageIds.add(data.id);
             }
 
-            const data = await response.json();
-            for (const msg of data.messages) {
-                renderMessage(msg, true);
-            }
+            const item = buildMessageNode(data);
 
-            offset += data.messages.length;
-            hasMore = Boolean(data.has_more);
-
-            if (offset === data.messages.length) {
-                chatLog.scrollTop = chatLog.scrollHeight;
+            if (prepend) {
+                chatLog.insertBefore(item, chatLog.firstChild);
             } else {
-                const newHeight = chatLog.scrollHeight;
-                chatLog.scrollTop = newHeight - oldHeight;
+                chatLog.appendChild(item);
+                chatLog.scrollTop = chatLog.scrollHeight;
             }
-        } catch (error) {
-            addSystemMessage("No se pudo cargar historial.");
-        } finally {
-            loadingHistory = false;
-        }
-    }
-
-    const socket = new WebSocket(socketUrl);
-
-    socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-
-        if (data.event === "message") {
-            renderMessage(data);
-            return;
         }
 
-        if (data.event === "presence_snapshot") {
-            presenceList = data.users || [];
-            renderPresence();
-            return;
-        }
-
-        if (data.event === "user_joined") {
-            if (data.alias && !presenceList.includes(data.alias)) {
-                presenceList.push(data.alias);
-                presenceList.sort();
+        async function loadHistory() {
+            if (loadingHistory || !hasMore) {
+                return;
             }
-            renderPresence();
-            addSystemMessage(`${data.alias} entro a la sala.`);
-            return;
+
+            loadingHistory = true;
+            const oldHeight = chatLog.scrollHeight;
+            try {
+                const response = await fetch(`/api/rooms/${encodeURIComponent(roomName)}/messages/?limit=${PAGE_SIZE}&offset=${offset}`);
+                if (!response.ok) {
+                    throw new Error("No se pudo cargar historial");
+                }
+
+                const data = await response.json();
+                for (const msg of data.messages) {
+                    renderMessage(msg, true);
+                }
+
+                offset += data.messages.length;
+                hasMore = Boolean(data.has_more);
+
+                if (offset === data.messages.length) {
+                    chatLog.scrollTop = chatLog.scrollHeight;
+                } else {
+                    chatLog.scrollTop = chatLog.scrollHeight - oldHeight;
+                }
+            } catch (error) {
+                addSystemMessage("No se pudo cargar historial.");
+            } finally {
+                loadingHistory = false;
+            }
         }
 
-        if (data.event === "user_left") {
-            presenceList = presenceList.filter((name) => name !== data.alias);
-            renderPresence();
-            addSystemMessage(`${data.alias} salio de la sala.`);
-            return;
-        }
+        const socket = new WebSocket(socketUrl);
 
-        if (data.event === "throttled") {
-            addSystemMessage(data.detail || "Estas enviando mensajes demasiado rapido.");
-        }
-    };
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
 
-    socket.onclose = () => {
-        addSystemMessage("Conexion cerrada. Recarga la pagina para reconectar.");
-    };
+            if (data.event === "message") {
+                renderMessage(data);
+                return;
+            }
 
-    chatLog.addEventListener("scroll", () => {
-        if (chatLog.scrollTop <= 20) {
-            loadHistory();
-        }
-    });
+            if (data.event === "presence_snapshot") {
+                presenceList = data.users || [];
+                renderPresence();
+                return;
+            }
 
-    setInterval(() => {
-        if (socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ event: "ping" }));
-        }
-    }, 15000);
+            if (data.event === "user_joined") {
+                if (data.alias && !presenceList.includes(data.alias)) {
+                    presenceList.push(data.alias);
+                    presenceList.sort();
+                }
+                renderPresence();
+                addSystemMessage(`${data.alias} entró al canal.`);
+                return;
+            }
 
-    loadHistory();
+            if (data.event === "user_left") {
+                presenceList = presenceList.filter((name) => name !== data.alias);
+                renderPresence();
+                addSystemMessage(`${data.alias} salió del canal.`);
+                return;
+            }
 
-    chatForm.addEventListener("submit", (event) => {
-        event.preventDefault();
-
-        if (socket.readyState !== WebSocket.OPEN) {
-            addSystemMessage("No hay conexion WebSocket activa.");
-            return;
-        }
-
-        const payload = {
-            alias: aliasInput.value || "Anónimo",
-            message: messageInput.value,
+            if (data.event === "throttled") {
+                addSystemMessage(data.detail || "Estás enviando mensajes demasiado rápido.");
+            }
         };
 
-        socket.send(JSON.stringify(payload));
-        messageInput.value = "";
-        messageInput.focus();
-    });
-    
-    // ==========================================
-    // VoiceChat - WebRTC Voice Controls
-    // ==========================================
-    let voiceChat = null;
+        socket.onclose = () => {
+            addSystemMessage("Conexión cerrada. Recarga la página para reconectar.");
+        };
 
-    document.getElementById('btn-voice-toggle').addEventListener('click', async function() {
-        if (!voiceChat) {
-            // Crear instancia de VoiceChat
-            voiceChat = new VoiceChat({
-                roomName: roomName,
-                alias: defaultAlias,
-                wsUrl: voiceSocketUrl,
-                iceServers: webrtcIceServers,
-                onVoiceStateChange: function(state) {
-                    console.log('Voice state:', state);
-                    document.getElementById('btn-mute').style.display = state.connected ? 'inline-block' : 'none';
-                    document.getElementById('btn-voice-toggle').textContent = state.connected ? '🔌 Desconectar' : '🎤 Conectar Voz';
-                    document.getElementById('voice-status').textContent = state.connected ? 'Conectado a voz' : '';
-                },
-                onUserJoin: function(users) {
-                    document.getElementById('voice-users').textContent = '👥 En voz: ' + (users.length ? users.join(', ') : 'Nadie');
-                },
-                onUserLeave: function(users) {
-                    console.log('Usuario salió de voz:', users);
-                },
-                onError: function(error) {
-                    console.error('Voice error:', error);
-                    addSystemMessage('Error de voz: ' + error);
+        chatLog.addEventListener("scroll", () => {
+            if (chatLog.scrollTop <= 20) {
+                loadHistory();
+            }
+        });
+
+        setInterval(() => {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ event: "ping" }));
+            }
+        }, 15000);
+
+        loadHistory();
+        if (attachButton && fileInput) {
+            attachButton.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', updateFileLabel);
+        }
+
+        chatForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+
+            const messageText = (messageInput.value || '').trim();
+            const selectedFile = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+
+            if (!messageText && !selectedFile) {
+                addSystemMessage("Escribe un mensaje o adjunta un archivo.");
+                return;
+            }
+
+            if (selectedFile) {
+                const formData = new FormData();
+                formData.append('message', messageText);
+                formData.append('attachment', selectedFile);
+
+                fetch(attachmentUploadUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                    },
+                    body: formData,
+                }).then(async (response) => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.error || 'No se pudo subir el archivo.');
+                    }
+
+                    if (data.message) {
+                        renderMessage(data.message);
+                    }
+
+                    messageInput.value = '';
+                    fileInput.value = '';
+                    updateFileLabel();
+                    messageInput.focus();
+                }).catch((error) => {
+                    addSystemMessage(error.message || 'No se pudo subir el archivo.');
+                });
+                return;
+            }
+
+            if (socket.readyState !== WebSocket.OPEN) {
+                addSystemMessage("No hay conexión WebSocket activa.");
+                return;
+            }
+
+            socket.send(JSON.stringify({ alias: displayName, message: messageText }));
+            messageInput.value = "";
+            fileInput.value = '';
+                updateFileLabel();
+            messageInput.focus();
+        });
+    } else {
+        let voiceChat = null;
+        const sidebarVoiceUsersElement = document.getElementById('voice-sidebar-users');
+        const chatLog = document.getElementById("chat-log");
+        const chatForm = document.getElementById("chat-form");
+        const messageInput = document.getElementById("chat-message");
+        const fileInput = document.getElementById("chat-file");
+        const presenceUsers = document.getElementById("presence-users");
+        const PAGE_SIZE = 30;
+        let offset = 0;
+        let hasMore = true;
+        let loadingHistory = false;
+        const renderedMessageIds = new Set();
+        let presenceList = [];
+        const chatSocket = new WebSocket(socketUrl);
+
+        function renderPresence() {
+            const text = `Usuarios activos: ${presenceList.length ? presenceList.join(", ") : "-"}`;
+            if (presenceUsers) {
+                presenceUsers.textContent = text;
+            }
+        }
+
+        function renderVoiceUsers(users) {
+            if (!users || !users.length) {
+                if (sidebarVoiceUsersElement) {
+                    sidebarVoiceUsersElement.textContent = 'Conectados: nadie por ahora';
+                }
+                return;
+            }
+
+            const chips = users.map((name) => `<span class="channel-badge">${name}</span>`).join('');
+            if (sidebarVoiceUsersElement) {
+                sidebarVoiceUsersElement.innerHTML = `Conectados: <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">${chips}</div>`;
+            }
+        }
+
+        function addSystemMessage(text) {
+            const item = document.createElement("div");
+            item.className = "notice";
+            item.textContent = text;
+            chatLog.appendChild(item);
+        }
+
+        function renderMessage(data, prepend = false) {
+            if (data.id && renderedMessageIds.has(data.id)) {
+                return;
+            }
+            if (data.id) {
+                renderedMessageIds.add(data.id);
+            }
+
+            const item = buildMessageNode(data);
+
+            if (prepend) {
+                chatLog.insertBefore(item, chatLog.firstChild);
+            } else {
+                chatLog.appendChild(item);
+                chatLog.scrollTop = chatLog.scrollHeight;
+            }
+        }
+
+        async function loadHistory() {
+            if (!chatLog || !hasMore || loadingHistory) {
+                return;
+            }
+
+            loadingHistory = true;
+            const oldHeight = chatLog.scrollHeight;
+            try {
+                const response = await fetch(`/api/rooms/${encodeURIComponent(roomName)}/messages/?limit=${PAGE_SIZE}&offset=${offset}`);
+                if (!response.ok) {
+                    throw new Error("No se pudo cargar historial");
+                }
+
+                const data = await response.json();
+                for (const msg of data.messages) {
+                    renderMessage(msg, true);
+                }
+
+                offset += data.messages.length;
+                hasMore = Boolean(data.has_more);
+
+                if (offset === data.messages.length) {
+                    chatLog.scrollTop = chatLog.scrollHeight;
+                } else {
+                    chatLog.scrollTop = chatLog.scrollHeight - oldHeight;
+                }
+            } catch (error) {
+                addSystemMessage("No se pudo cargar historial.");
+            } finally {
+                loadingHistory = false;
+            }
+        }
+
+        chatSocket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            if (data.event === 'message') {
+                renderMessage(data);
+                return;
+            }
+
+            if (data.event === 'presence_snapshot') {
+                presenceList = data.users || [];
+                renderPresence();
+                return;
+            }
+
+            if (data.event === 'user_joined') {
+                if (data.alias && !presenceList.includes(data.alias)) {
+                    presenceList.push(data.alias);
+                    presenceList.sort();
+                }
+                renderPresence();
+                addSystemMessage(`${data.alias} entró al canal.`);
+                return;
+            }
+
+            if (data.event === 'user_left') {
+                presenceList = presenceList.filter((name) => name !== data.alias);
+                renderPresence();
+                addSystemMessage(`${data.alias} salió del canal.`);
+                return;
+            }
+
+            if (data.event === 'throttled') {
+                addSystemMessage(data.detail || 'Estás enviando mensajes demasiado rápido.');
+            }
+        };
+
+        chatSocket.onclose = () => {
+            addSystemMessage('Conexión de chat cerrada. Recarga la página para reconectar.');
+        };
+
+        function renderVoiceUsers(users) {
+            if (!sidebarVoiceUsersElement) {
+                return;
+            }
+
+            if (!users || !users.length) {
+                sidebarVoiceUsersElement.textContent = 'Conectados: nadie por ahora';
+                return;
+            }
+
+            sidebarVoiceUsersElement.innerHTML = `Conectados: <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">${users.map((name) => `<span class="channel-badge">${name}</span>`).join('')}</div>`;
+        }
+
+        document.getElementById('btn-voice-toggle').addEventListener('click', async function() {
+            if (!voiceChat) {
+                voiceChat = new VoiceChat({
+                    roomName: roomName,
+                    alias: displayName,
+                    wsUrl: voiceSocketUrl,
+                    iceServers: webrtcIceServers,
+                    onVoiceStateChange: function(state) {
+                        document.getElementById('btn-mute').style.display = state.connected ? 'inline-block' : 'none';
+                        document.getElementById('btn-voice-toggle').textContent = state.connected ? '🔌 Desconectar' : '🎤 Conectar voz';
+                        document.getElementById('voice-status').textContent = state.connected ? 'Conectado a voz' : '';
+                        if (!state.connected) {
+                            renderVoiceUsers([]);
+                        } else if (voiceChat) {
+                            renderVoiceUsers(Array.from(voiceChat.voiceUsers.keys()));
+                        }
+                    },
+                    onUserJoin: function(users) {
+                        renderVoiceUsers(Array.from(voiceChat.voiceUsers.keys()));
+                    },
+                    onUserLeave: function(users) {
+                        renderVoiceUsers(Array.from(voiceChat.voiceUsers.keys()));
+                        console.log('Usuario salió de voz:', users);
+                    },
+                    onError: function(error) {
+                        console.error('Voice error:', error);
+                        alert('Error de voz: ' + error);
+                    }
+                });
+
+                const connected = await voiceChat.connect();
+                if (!connected) {
+                    alert('No se pudo conectar al chat de voz.');
+                    voiceChat = null;
+                }
+            } else {
+                voiceChat.disconnect();
+                voiceChat = null;
+                document.getElementById('btn-mute').style.display = 'none';
+                document.getElementById('btn-voice-toggle').textContent = '🎤 Conectar voz';
+                document.getElementById('voice-status').textContent = '';
+                if (sidebarVoiceUsersElement) {
+                    sidebarVoiceUsersElement.textContent = 'Conectados: nadie por ahora';
+                }
+            }
+        });
+
+        document.querySelectorAll('.channel-link').forEach((link) => {
+            link.addEventListener('click', (event) => {
+                if (voiceChat && voiceChat.isConnected) {
+                    event.preventDefault();
+                    addSystemMessage('Desconecta la voz manualmente antes de cambiar de canal.');
                 }
             });
-            
-            const connected = await voiceChat.connect();
-            if (!connected) {
-                addSystemMessage('No se pudo conectar al chat de voz.');
-                voiceChat = null;
-            }
-        } else {
-            voiceChat.disconnect();
-            voiceChat = null;
-            document.getElementById('btn-mute').style.display = 'none';
-            document.getElementById('btn-voice-toggle').textContent = '🎤 Conectar Voz';
-            document.getElementById('voice-status').textContent = '';
-            document.getElementById('voice-users').textContent = '';
-        }
-    });
+        });
 
-    document.getElementById('btn-mute').addEventListener('click', function() {
-        if (voiceChat) {
-            const muted = voiceChat.toggleMute();
-            this.textContent = muted ? '🔇 Unmute' : '🔊 Mute';
+        document.getElementById('btn-mute').addEventListener('click', function() {
+            if (voiceChat) {
+                const muted = voiceChat.toggleMute();
+                this.textContent = muted ? '🔇 Activar' : '🔊 Silenciar';
+            }
+        });
+
+        if (chatForm) {
+            chatLog.addEventListener("scroll", () => {
+                if (chatLog.scrollTop <= 20) {
+                    loadHistory();
+                }
+            });
+
+            setInterval(() => {
+                if (chatSocket.readyState === WebSocket.OPEN) {
+                    chatSocket.send(JSON.stringify({ event: "ping" }));
+                }
+            }, 15000);
+
+            loadHistory();
+
+            chatForm.addEventListener("submit", (event) => {
+                event.preventDefault();
+
+                const messageText = (messageInput.value || '').trim();
+                const selectedFile = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+
+                if (!messageText && !selectedFile) {
+                    addSystemMessage('Escribe un mensaje o adjunta un archivo.');
+                    return;
+                }
+
+                if (selectedFile) {
+                    const formData = new FormData();
+                    formData.append('message', messageText);
+                    formData.append('attachment', selectedFile);
+
+                    fetch(attachmentUploadUrl, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrfToken,
+                        },
+                        body: formData,
+                    }).then(async (response) => {
+                        const data = await response.json();
+                        if (!response.ok) {
+                            throw new Error(data.error || 'No se pudo subir el archivo.');
+                        }
+
+                        if (data.message) {
+                            renderMessage(data.message);
+                        }
+
+                        messageInput.value = '';
+                        fileInput.value = '';
+                        messageInput.focus();
+                    }).catch((error) => {
+                        addSystemMessage(error.message || 'No se pudo subir el archivo.');
+                    });
+                    return;
+                }
+
+                if (chatSocket.readyState !== WebSocket.OPEN) {
+                    addSystemMessage('No hay conexión de chat activa.');
+                    return;
+                }
+
+                chatSocket.send(JSON.stringify({ alias: displayName, message: messageText }));
+                messageInput.value = "";
+                fileInput.value = '';
+                messageInput.focus();
+            });
         }
-    });
-    
+    }
 </script>
-<!-- WebRTC Voice Chat (CDN) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/simple-peer/9.11.1/simplepeer.min.js"></script>
 <script src="{% static 'js/voice-chat.js' %}"></script>
 {% endblock %}

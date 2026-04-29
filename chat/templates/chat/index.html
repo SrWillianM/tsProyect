@@ -1,9 +1,39 @@
 {% extends 'chat/base.html' %}
 
-{% block title %}Inicio | TeamSpeak Clone MVP{% endblock %}
+{% block title %}Inicio | VozChat{% endblock %}
 
 {% block content %}
-<h1>Chat en tiempo real</h1>
-<p class="muted">Selecciona una sala existente desde la barra izquierda.</p>
-<p class="muted">Si no hay salas, crea algunas en <a href="/admin/">/admin</a>.</p>
+<section class="card">
+	<div class="split-layout">
+		<div>
+			<h1>Todo en un solo lugar</h1>
+			<p class="muted">Entra a canales de chat o voz, usa tu apodo y cambia tu foto cuando quieras.</p>
+		</div>
+		<div class="channel-box">
+			<h3>Atajos</h3>
+			<div style="display:flex; gap:10px; flex-wrap:wrap;">
+				<a class="btn btn-primary" href="{% url 'profile' %}">Mi perfil</a>
+				<a class="btn btn-ghost" href="{% url 'signup' %}">Invitar usuario</a>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section class="card" style="margin-top: 16px;">
+	<h2>Cómo funciona</h2>
+	<div class="split-layout" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+		<div class="channel-box">
+			<h3>Chat</h3>
+			<p class="muted">Canales para texto, historial y presencia.</p>
+		</div>
+		<div class="channel-box">
+			<h3>Voz</h3>
+			<p class="muted">Canales dedicados solo a voz con WebRTC.</p>
+		</div>
+		<div class="channel-box">
+			<h3>Perfil</h3>
+			<p class="muted">Apodo y foto visibles en toda la interfaz.</p>
+		</div>
+	</div>
+</section>
 {% endblock %}

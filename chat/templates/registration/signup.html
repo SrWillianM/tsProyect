@@ -1,0 +1,40 @@
+{% extends 'chat/base.html' %}
+
+{% block title %}Crear cuenta | VozChat{% endblock %}
+
+{% block content %}
+<section class="card" style="max-width: 560px; margin: 0 auto;">
+    <h1>Crear cuenta</h1>
+    <p class="muted">Un usuario nuevo para entrar al chat y a la voz.</p>
+
+    <form method="post" class="form-grid" style="margin-top: 18px;">
+        {% csrf_token %}
+        <div class="field-grid">
+            <label for="id_username">Usuario</label>
+            {{ form.username }}
+            {% if form.username.errors %}<div class="notice">{{ form.username.errors }}</div>{% endif %}
+        </div>
+        <div class="field-grid">
+            <label for="id_email">Correo</label>
+            {{ form.email }}
+            {% if form.email.errors %}<div class="notice">{{ form.email.errors }}</div>{% endif %}
+        </div>
+        <div class="field-grid">
+            <label for="id_password1">Contraseña</label>
+            {{ form.password1 }}
+            {% if form.password1.errors %}<div class="notice">{{ form.password1.errors }}</div>{% endif %}
+        </div>
+        <div class="field-grid">
+            <label for="id_password2">Confirmar contraseña</label>
+            {{ form.password2 }}
+            {% if form.password2.errors %}<div class="notice">{{ form.password2.errors }}</div>{% endif %}
+        </div>
+        {% if form.non_field_errors %}
+            <div class="notice">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <button type="submit">Crear cuenta</button>
+    </form>
+
+    <p class="muted" style="margin-top: 14px;">Ya tengo una cuenta. <a href="{% url 'login' %}">Entrar</a></p>
+</section>
+{% endblock %}
