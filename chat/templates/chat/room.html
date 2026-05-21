@@ -18,61 +18,59 @@
     </div>
 </section>
 
-{% if is_voice_room %}
-    <section class="card" style="margin-top:16px;">
-        <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom: 12px;">
-            <div>
-                <h2>Chat del canal de voz</h2>
-                <p class="muted" id="presence-users">Usuarios activos: -</p>
-            </div>
-            <div class="channel-box">
-                <span class="muted">También puedes escribir aquí sin salir del canal.</span>
-            </div>
+<section class="card" style="margin-top:16px;">
+    <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom: 12px;">
+        <div>
+            <h2>{% if is_voice_room %}Chat del canal de voz{% else %}Chat{% endif %}</h2>
+            <p class="muted" id="presence-users">Usuarios activos: -</p>
         </div>
+        <div class="channel-box">
+            <span class="muted">Tu mensaje se firma con tu apodo.</span>
+        </div>
+    </div>
 
-        <div id="chat-log" class="message-list" style="min-height: 42vh; max-height: 42vh; overflow-y:auto;"></div>
+    <div id="chat-log" class="message-list" style="min-height:{% if is_voice_room %}42vh{% else %}52vh{% endif %}; max-height:{% if is_voice_room %}42vh{% else %}52vh{% endif %}; overflow-y:auto;"></div>
 
-        <form id="chat-form" class="form-grid" style="margin-top:16px; grid-template-columns: 1fr auto; align-items:end;">
-            {% csrf_token %}
-            <div class="field-grid">
-                <input id="chat-message" type="text" placeholder="Escribe un mensaje" maxlength="1000">
-                <input id="chat-file" type="file" hidden>
-                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                    <button id="btn-attach" type="button" class="btn btn-ghost">📎 Adjuntar</button>
-                    <small id="chat-file-name" class="muted">GIF, imágenes o archivos.</small>
+    <form id="chat-form" class="form-grid" style="margin-top:16px; grid-template-columns: 1fr auto; align-items:end;">
+        {% csrf_token %}
+        <div id="composer-root" class="field-grid">
+            <input id="chat-message" type="text" placeholder="Escribe un mensaje" maxlength="1000">
+            <input id="chat-file" type="file" hidden>
+            <input class="js-sticker-upload" type="file" accept="image/*" hidden>
+
+            <div class="empty-state js-dropzone" style="padding:10px 12px;">Arrastra archivo aquí para enviarlo</div>
+            <div class="empty-state js-file-preview" style="display:none; padding:10px 12px;"></div>
+
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <button class="btn btn-ghost js-btn-attach" type="button">📎 Adjuntar</button>
+                <button class="btn btn-ghost js-clear-file" type="button">🧹 Limpiar archivo</button>
+                <button class="btn btn-ghost js-emoji-toggle" type="button">😀 Emojis</button>
+                <button class="btn btn-ghost js-sticker-toggle" type="button">🖼️ Stickers</button>
+                <small class="muted js-file-name">GIF, imágenes o archivos.</small>
+            </div>
+
+            <div class="empty-state js-picker" style="display:none; gap:10px;">
+                <div>
+                    <strong>Emojis</strong>
+                    <input class="js-emoji-search" type="text" placeholder="Buscar emoji" style="margin-top:8px; max-width:240px;">
+                    <div class="js-emoji-categories" style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+                    <div class="js-emoji-grid" style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+                </div>
+                <div style="margin-top:8px;">
+                    <strong>Stickers personalizados</strong>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+                        <input class="js-sticker-name" type="text" placeholder="Nombre sticker" maxlength="60" style="max-width:220px;">
+                        <button class="btn btn-ghost js-sticker-upload-btn" type="button">Guardar sticker</button>
+                        <button class="btn btn-ghost js-sticker-open-upload" type="button">Elegir imagen</button>
+                    </div>
+                    <small class="muted js-selected-sticker" style="display:block; margin-top:8px;">Sin sticker seleccionado</small>
+                    <div class="js-sticker-grid" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;"></div>
                 </div>
             </div>
-            <button type="submit">Enviar</button>
-        </form>
-    </section>
-{% else %}
-    <section class="card" style="margin-top:16px;">
-        <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom: 12px;">
-            <div>
-                <h2>Chat</h2>
-                <p class="muted" id="presence-users">Usuarios activos: -</p>
-            </div>
-            <div class="channel-box">
-                <span class="muted">Tu mensaje se firma con tu apodo.</span>
-            </div>
         </div>
-
-        <div id="chat-log" class="message-list" style="min-height: 52vh; max-height: 52vh; overflow-y:auto;"></div>
-
-        <form id="chat-form" class="form-grid" style="margin-top:16px; grid-template-columns: 1fr auto; align-items:end;">
-            {% csrf_token %}
-            <div class="field-grid">
-                <input id="chat-message" type="text" placeholder="Escribe un mensaje" maxlength="1000">
-                <input id="chat-file" type="file" hidden>
-                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                    <button id="btn-attach" type="button" class="btn btn-ghost">📎 Adjuntar</button>
-                    <small id="chat-file-name" class="muted">GIF, imágenes o archivos.</small>
-                </div>
-            </div>
-            <button type="submit">Enviar</button>
-        </form>
-    </section>
-{% endif %}
+        <button type="submit">Enviar</button>
+    </form>
+</section>
 
 {{ webrtc_ice_servers|json_script:"webrtc-ice-servers" }}
 
@@ -85,7 +83,28 @@
     const socketUrl = `${protocol}://${window.location.host}/ws/chat/${roomName}/?alias=${encodeURIComponent(displayName)}`;
     const voiceSocketUrl = `${protocol}://${window.location.host}/ws/voice/${roomName}/?alias=${encodeURIComponent(displayName)}&voice=true`;
     const attachmentUploadUrl = `/api/rooms/${encodeURIComponent(roomName)}/attachments/`;
+    const stickersUrl = '/api/stickers/';
     const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '';
+    const EMOJI_GROUPS = {
+        caritas: ['😀', '😃', '😄', '😁', '😆', '😂', '🤣', '😊', '😍', '🤩', '😎', '🥳'],
+        gestos: ['👍', '👎', '👏', '🙏', '🤝', '✌️', '👌', '🤞', '💪', '🫶', '🤟', '🫡'],
+        emociones: ['🥰', '😘', '😌', '😅', '😇', '😴', '😭', '😡', '🤔', '😬', '🙃', '😵'],
+        comida: ['🍎', '🍔', '🍕', '🍣', '🍦', '🍩', '🍓', '🥑', '🍟', '🍉', '☕', '🧋'],
+        actividad: ['⚽', '🏀', '🎮', '🎯', '🎲', '🎸', '🎨', '🏆', '🚀', '🎧', '📸', '🛹'],
+        objetos: ['📱', '💻', '⌚', '🎁', '📌', '🔔', '🧠', '💡', '📝', '🧩', '🧿', '🔋'],
+        viajes: ['🚗', '🚲', '✈️', '🚀', '🏖️', '🏕️', '🏙️', '🗺️', '🛳️', '🚉', '🚌', '🏔️'],
+        simbolos: ['❤️', '💙', '💚', '💛', '💜', '🖤', '✨', '🔥', '⭐', '🌈', '💯', '💥'],
+    };
+    const EMOJI_GROUP_LABELS = {
+        caritas: 'Caritas',
+        gestos: 'Gestos',
+        emociones: 'Emociones',
+        comida: 'Comida',
+        actividad: 'Actividad',
+        objetos: 'Objetos',
+        viajes: 'Viajes',
+        simbolos: 'Simbolos',
+    };
 
     function formatTime(value) {
         return new Date(value).toLocaleTimeString();
@@ -137,6 +156,27 @@
         return wrap;
     }
 
+    function buildStickerNode(data) {
+        if (!data.sticker_url) {
+            return null;
+        }
+
+        const wrap = document.createElement('div');
+        wrap.style.marginTop = '10px';
+
+        const image = document.createElement('img');
+        image.src = data.sticker_url;
+        image.alt = data.sticker_name || 'Sticker';
+        image.style.display = 'block';
+        image.style.maxWidth = '200px';
+        image.style.maxHeight = '200px';
+        image.style.borderRadius = '14px';
+        image.loading = 'lazy';
+        wrap.appendChild(image);
+
+        return wrap;
+    }
+
     function buildMessageNode(data) {
         const item = document.createElement('div');
         item.className = 'notice';
@@ -165,318 +205,460 @@
             item.appendChild(attachmentNode);
         }
 
+        const stickerNode = buildStickerNode(data);
+        if (stickerNode) {
+            item.appendChild(stickerNode);
+        }
+
         return item;
     }
 
-    if (!isVoiceRoom) {
-        const chatLog = document.getElementById("chat-log");
-        const chatForm = document.getElementById("chat-form");
-        const messageInput = document.getElementById("chat-message");
-        const fileInput = document.getElementById("chat-file");
-        const presenceUsers = document.getElementById("presence-users");
-        const attachButton = document.getElementById("btn-attach");
-        const fileNameLabel = document.getElementById("chat-file-name");
-        function updateFileLabel() {
-            if (!fileInput || !fileNameLabel) {
-                return;
-            }
+    function setupComposer(params) {
+        const {
+            root,
+            chatForm,
+            messageInput,
+            fileInput,
+            addSystemMessage,
+            renderMessage,
+            sendTextMessage,
+            canSendText,
+        } = params;
 
-            fileNameLabel.textContent = fileInput.files && fileInput.files[0]
-                ? fileInput.files[0].name
-                : 'GIF, imágenes o archivos.';
-        }
+        const attachButton = root.querySelector('.js-btn-attach');
+        const clearFileBtn = root.querySelector('.js-clear-file');
+        const fileNameLabel = root.querySelector('.js-file-name');
+        const filePreview = root.querySelector('.js-file-preview');
+        const dropzone = root.querySelector('.js-dropzone');
+        const emojiToggle = root.querySelector('.js-emoji-toggle');
+        const stickerToggle = root.querySelector('.js-sticker-toggle');
+        const picker = root.querySelector('.js-picker');
+        const emojiSearchInput = root.querySelector('.js-emoji-search');
+        const emojiCategories = root.querySelector('.js-emoji-categories');
+        const emojiGrid = root.querySelector('.js-emoji-grid');
+        const stickerGrid = root.querySelector('.js-sticker-grid');
+        const stickerUploadInput = root.querySelector('.js-sticker-upload');
+        const stickerUploadOpenBtn = root.querySelector('.js-sticker-open-upload');
+        const stickerUploadButton = root.querySelector('.js-sticker-upload-btn');
+        const stickerNameInput = root.querySelector('.js-sticker-name');
+        const selectedStickerInfo = root.querySelector('.js-selected-sticker');
 
-        const PAGE_SIZE = 30;
-        let offset = 0;
-        let hasMore = true;
-        let loadingHistory = false;
-        const renderedMessageIds = new Set();
-        let presenceList = [];
+        let selectedSticker = null;
 
-        function renderPresence() {
-            presenceUsers.textContent = `Usuarios activos: ${presenceList.length ? presenceList.join(", ") : "-"}`;
-        }
-
-        function addSystemMessage(text) {
-            const item = document.createElement("div");
-            item.className = "notice";
-            item.textContent = text;
-            chatLog.appendChild(item);
-        }
-
-        function renderMessage(data, prepend = false) {
-            if (data.id && renderedMessageIds.has(data.id)) {
-                return;
-            }
-            if (data.id) {
-                renderedMessageIds.add(data.id);
-            }
-
-            const item = buildMessageNode(data);
-
-            if (prepend) {
-                chatLog.insertBefore(item, chatLog.firstChild);
-            } else {
-                chatLog.appendChild(item);
-                chatLog.scrollTop = chatLog.scrollHeight;
-            }
-        }
-
-        async function loadHistory() {
-            if (loadingHistory || !hasMore) {
-                return;
-            }
-
-            loadingHistory = true;
-            const oldHeight = chatLog.scrollHeight;
-            try {
-                const response = await fetch(`/api/rooms/${encodeURIComponent(roomName)}/messages/?limit=${PAGE_SIZE}&offset=${offset}`);
-                if (!response.ok) {
-                    throw new Error("No se pudo cargar historial");
-                }
-
-                const data = await response.json();
-                for (const msg of data.messages) {
-                    renderMessage(msg, true);
-                }
-
-                offset += data.messages.length;
-                hasMore = Boolean(data.has_more);
-
-                if (offset === data.messages.length) {
-                    chatLog.scrollTop = chatLog.scrollHeight;
-                } else {
-                    chatLog.scrollTop = chatLog.scrollHeight - oldHeight;
-                }
-            } catch (error) {
-                addSystemMessage("No se pudo cargar historial.");
-            } finally {
-                loadingHistory = false;
-            }
-        }
-
-        const socket = new WebSocket(socketUrl);
-
-        socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-
-            if (data.event === "message") {
-                renderMessage(data);
-                return;
-            }
-
-            if (data.event === "presence_snapshot") {
-                presenceList = data.users || [];
-                renderPresence();
-                return;
-            }
-
-            if (data.event === "user_joined") {
-                if (data.alias && !presenceList.includes(data.alias)) {
-                    presenceList.push(data.alias);
-                    presenceList.sort();
-                }
-                renderPresence();
-                addSystemMessage(`${data.alias} entró al canal.`);
-                return;
-            }
-
-            if (data.event === "user_left") {
-                presenceList = presenceList.filter((name) => name !== data.alias);
-                renderPresence();
-                addSystemMessage(`${data.alias} salió del canal.`);
-                return;
-            }
-
-            if (data.event === "throttled") {
-                addSystemMessage(data.detail || "Estás enviando mensajes demasiado rápido.");
-            }
-        };
-
-        socket.onclose = () => {
-            addSystemMessage("Conexión cerrada. Recarga la página para reconectar.");
-        };
-
-        chatLog.addEventListener("scroll", () => {
-            if (chatLog.scrollTop <= 20) {
-                loadHistory();
-            }
-        });
-
-        setInterval(() => {
-            if (socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ event: "ping" }));
-            }
-        }, 15000);
-
-        loadHistory();
-        if (attachButton && fileInput) {
-            attachButton.addEventListener('click', () => fileInput.click());
-            fileInput.addEventListener('change', updateFileLabel);
-        }
-
-        chatForm.addEventListener("submit", (event) => {
-            event.preventDefault();
-
-            const messageText = (messageInput.value || '').trim();
+        function renderFilePreview() {
             const selectedFile = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+            if (fileNameLabel) {
+                fileNameLabel.textContent = selectedFile ? selectedFile.name : 'GIF, imágenes o archivos.';
+            }
 
-            if (!messageText && !selectedFile) {
-                addSystemMessage("Escribe un mensaje o adjunta un archivo.");
+            if (!selectedFile) {
+                filePreview.innerHTML = '';
+                filePreview.style.display = 'none';
                 return;
             }
 
-            if (selectedFile) {
-                const formData = new FormData();
-                formData.append('message', messageText);
-                formData.append('attachment', selectedFile);
+            filePreview.style.display = 'block';
+            filePreview.innerHTML = '';
+            const meta = document.createElement('div');
+            meta.className = 'muted';
+            meta.textContent = `${selectedFile.name} · ${(selectedFile.size / 1024).toFixed(1)} KB`;
+            filePreview.appendChild(meta);
 
-                fetch(attachmentUploadUrl, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrfToken,
-                    },
-                    body: formData,
-                }).then(async (response) => {
-                    const data = await response.json();
-                    if (!response.ok) {
-                        throw new Error(data.error || 'No se pudo subir el archivo.');
-                    }
+            if (selectedFile.type && selectedFile.type.startsWith('image/')) {
+                const image = document.createElement('img');
+                image.style.maxWidth = '180px';
+                image.style.maxHeight = '180px';
+                image.style.borderRadius = '12px';
+                image.style.marginTop = '8px';
+                image.alt = selectedFile.name;
+                image.src = URL.createObjectURL(selectedFile);
+                filePreview.appendChild(image);
+            }
+        }
 
-                    if (data.message) {
-                        renderMessage(data.message);
-                    }
+        function resetSticker() {
+            selectedSticker = null;
+            selectedStickerInfo.textContent = 'Sin sticker seleccionado';
+        }
 
-                    messageInput.value = '';
-                    fileInput.value = '';
-                    updateFileLabel();
+        async function deleteSticker(sticker) {
+            const confirmed = window.confirm(`Eliminar sticker ${sticker.name}?`);
+            if (!confirmed) {
+                return;
+            }
+
+            const response = await fetch(`${stickersUrl}${sticker.id}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                },
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'No se pudo eliminar el sticker.');
+            }
+
+            if (selectedSticker && selectedSticker.id === sticker.id) {
+                resetSticker();
+            }
+            await loadStickers();
+            addSystemMessage('Sticker eliminado.');
+        }
+
+        function renderEmojiGroup(groupKey) {
+            const searchValue = (emojiSearchInput.value || '').trim();
+            const pool = EMOJI_GROUPS[groupKey] || [];
+            const filtered = pool.filter((emoji) => {
+                if (!searchValue) {
+                    return true;
+                }
+                return emoji.includes(searchValue);
+            });
+
+            emojiGrid.innerHTML = '';
+            if (!filtered.length) {
+                const empty = document.createElement('small');
+                empty.className = 'muted';
+                empty.textContent = 'Sin resultados.';
+                emojiGrid.appendChild(empty);
+                return;
+            }
+
+            filtered.forEach((emoji) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'btn btn-ghost';
+                button.textContent = emoji;
+                button.style.padding = '6px 10px';
+                button.addEventListener('click', () => {
+                    messageInput.value = `${messageInput.value || ''}${emoji}`;
                     messageInput.focus();
-                }).catch((error) => {
-                    addSystemMessage(error.message || 'No se pudo subir el archivo.');
                 });
+                emojiGrid.appendChild(button);
+            });
+        }
+
+        let activeEmojiGroup = 'caritas';
+
+        function renderEmojiCategories() {
+            emojiCategories.innerHTML = '';
+            Object.keys(EMOJI_GROUPS).forEach((groupKey) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `btn ${groupKey === activeEmojiGroup ? '' : 'btn-ghost'}`;
+                button.textContent = EMOJI_GROUP_LABELS[groupKey] || groupKey;
+                button.style.padding = '6px 10px';
+                button.addEventListener('click', () => {
+                    activeEmojiGroup = groupKey;
+                    renderEmojiCategories();
+                    renderEmojiGroup(activeEmojiGroup);
+                });
+                emojiCategories.appendChild(button);
+            });
+        }
+
+        async function loadStickers() {
+            const response = await fetch(stickersUrl);
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'No se pudieron cargar stickers.');
+            }
+
+            stickerGrid.innerHTML = '';
+            const stickers = data.stickers || [];
+            if (!stickers.length) {
+                const empty = document.createElement('small');
+                empty.className = 'muted';
+                empty.textContent = 'Aún no tienes stickers.';
+                stickerGrid.appendChild(empty);
                 return;
             }
 
-            if (socket.readyState !== WebSocket.OPEN) {
-                addSystemMessage("No hay conexión WebSocket activa.");
+            stickers.forEach((sticker) => {
+                const tile = document.createElement('div');
+                tile.style.position = 'relative';
+                tile.style.display = 'inline-flex';
+                tile.style.flexDirection = 'column';
+                tile.style.alignItems = 'center';
+                tile.style.gap = '6px';
+
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'btn btn-ghost';
+                button.style.padding = '6px';
+                button.title = sticker.name;
+                button.innerHTML = `<img src="${sticker.url}" alt="${escapeHtml(sticker.name)}" style="width:48px;height:48px;object-fit:cover;border-radius:10px;">`;
+                button.addEventListener('click', () => {
+                    selectedSticker = sticker;
+                    fileInput.value = '';
+                    renderFilePreview();
+                    selectedStickerInfo.textContent = `Sticker: ${sticker.name}`;
+                });
+
+                const deleteButton = document.createElement('button');
+                deleteButton.type = 'button';
+                deleteButton.className = 'btn btn-ghost';
+                deleteButton.textContent = 'Eliminar';
+                deleteButton.style.padding = '4px 8px';
+                deleteButton.style.fontSize = '0.75rem';
+                deleteButton.addEventListener('click', async (event) => {
+                    event.stopPropagation();
+                    try {
+                        await deleteSticker(sticker);
+                    } catch (error) {
+                        addSystemMessage(error.message || 'No se pudo eliminar el sticker.');
+                    }
+                });
+
+                tile.appendChild(button);
+                tile.appendChild(deleteButton);
+                stickerGrid.appendChild(tile);
+            });
+        }
+
+        async function uploadSticker() {
+            const uploadFile = stickerUploadInput.files && stickerUploadInput.files[0] ? stickerUploadInput.files[0] : null;
+            if (!uploadFile) {
+                addSystemMessage('Selecciona una imagen para crear sticker.');
                 return;
             }
 
-            socket.send(JSON.stringify({ alias: displayName, message: messageText }));
-            messageInput.value = "";
+            const formData = new FormData();
+            formData.append('sticker', uploadFile);
+            formData.append('name', (stickerNameInput.value || '').trim());
+
+            const response = await fetch(stickersUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                },
+                body: formData,
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'No se pudo guardar el sticker.');
+            }
+
+            stickerUploadInput.value = '';
+            stickerNameInput.value = '';
+            await loadStickers();
+            addSystemMessage('Sticker guardado.');
+        }
+
+        async function sendWithUpload(messageText) {
+            const selectedFile = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+            const formData = new FormData();
+            formData.append('message', messageText || '');
+            if (selectedFile) {
+                formData.append('attachment', selectedFile);
+            }
+            if (selectedSticker) {
+                formData.append('sticker_id', selectedSticker.id);
+            }
+
+            const response = await fetch(attachmentUploadUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                },
+                body: formData,
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'No se pudo enviar.');
+            }
+
+            if (data.message) {
+                renderMessage(data.message);
+            }
             fileInput.value = '';
-                updateFileLabel();
-            messageInput.focus();
+            renderFilePreview();
+            resetSticker();
+        }
+
+        attachButton.addEventListener('click', () => fileInput.click());
+        clearFileBtn.addEventListener('click', () => {
+            fileInput.value = '';
+            renderFilePreview();
         });
-    } else {
-        let voiceChat = null;
-        const sidebarVoiceUsersElement = document.getElementById('voice-sidebar-users');
-        const chatLog = document.getElementById("chat-log");
-        const chatForm = document.getElementById("chat-form");
-        const messageInput = document.getElementById("chat-message");
-        const fileInput = document.getElementById("chat-file");
-        const presenceUsers = document.getElementById("presence-users");
-        const PAGE_SIZE = 30;
-        let offset = 0;
-        let hasMore = true;
-        let loadingHistory = false;
-        const renderedMessageIds = new Set();
-        let presenceList = [];
-        const chatSocket = new WebSocket(socketUrl);
-
-        function renderPresence() {
-            const text = `Usuarios activos: ${presenceList.length ? presenceList.join(", ") : "-"}`;
-            if (presenceUsers) {
-                presenceUsers.textContent = text;
-            }
-        }
-
-        function renderVoiceUsers(users) {
-            if (!users || !users.length) {
-                if (sidebarVoiceUsersElement) {
-                    sidebarVoiceUsersElement.textContent = 'Conectados: nadie por ahora';
-                }
-                return;
-            }
-
-            const chips = users.map((name) => `<span class="channel-badge">${name}</span>`).join('');
-            if (sidebarVoiceUsersElement) {
-                sidebarVoiceUsersElement.innerHTML = `Conectados: <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">${chips}</div>`;
-            }
-        }
-
-        function addSystemMessage(text) {
-            const item = document.createElement("div");
-            item.className = "notice";
-            item.textContent = text;
-            chatLog.appendChild(item);
-        }
-
-        function renderMessage(data, prepend = false) {
-            if (data.id && renderedMessageIds.has(data.id)) {
-                return;
-            }
-            if (data.id) {
-                renderedMessageIds.add(data.id);
-            }
-
-            const item = buildMessageNode(data);
-
-            if (prepend) {
-                chatLog.insertBefore(item, chatLog.firstChild);
-            } else {
-                chatLog.appendChild(item);
-                chatLog.scrollTop = chatLog.scrollHeight;
-            }
-        }
-
-        async function loadHistory() {
-            if (!chatLog || !hasMore || loadingHistory) {
-                return;
-            }
-
-            loadingHistory = true;
-            const oldHeight = chatLog.scrollHeight;
+        stickerUploadOpenBtn.addEventListener('click', () => stickerUploadInput.click());
+        stickerUploadButton.addEventListener('click', async () => {
             try {
-                const response = await fetch(`/api/rooms/${encodeURIComponent(roomName)}/messages/?limit=${PAGE_SIZE}&offset=${offset}`);
-                if (!response.ok) {
-                    throw new Error("No se pudo cargar historial");
-                }
-
-                const data = await response.json();
-                for (const msg of data.messages) {
-                    renderMessage(msg, true);
-                }
-
-                offset += data.messages.length;
-                hasMore = Boolean(data.has_more);
-
-                if (offset === data.messages.length) {
-                    chatLog.scrollTop = chatLog.scrollHeight;
-                } else {
-                    chatLog.scrollTop = chatLog.scrollHeight - oldHeight;
-                }
+                await uploadSticker();
             } catch (error) {
-                addSystemMessage("No se pudo cargar historial.");
-            } finally {
-                loadingHistory = false;
+                addSystemMessage(error.message || 'No se pudo guardar el sticker.');
             }
+        });
+
+        fileInput.addEventListener('change', () => {
+            resetSticker();
+            renderFilePreview();
+        });
+
+        dropzone.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            dropzone.style.borderColor = 'rgba(94, 234, 212, 0.6)';
+        });
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.style.borderColor = 'rgba(141, 151, 173, 0.35)';
+        });
+        dropzone.addEventListener('drop', (event) => {
+            event.preventDefault();
+            dropzone.style.borderColor = 'rgba(141, 151, 173, 0.35)';
+            const dropped = event.dataTransfer.files && event.dataTransfer.files[0] ? event.dataTransfer.files[0] : null;
+            if (!dropped) {
+                return;
+            }
+            resetSticker();
+            const dt = new DataTransfer();
+            dt.items.add(dropped);
+            fileInput.files = dt.files;
+            renderFilePreview();
+        });
+
+        renderEmojiCategories();
+        renderEmojiGroup(activeEmojiGroup);
+
+        emojiSearchInput.addEventListener('input', () => {
+            renderEmojiGroup(activeEmojiGroup);
+        });
+
+        emojiToggle.addEventListener('click', () => {
+            picker.style.display = picker.style.display === 'none' ? 'grid' : 'none';
+            renderEmojiGroup(activeEmojiGroup);
+        });
+
+        stickerToggle.addEventListener('click', async () => {
+            picker.style.display = 'grid';
+            try {
+                await loadStickers();
+            } catch (error) {
+                addSystemMessage(error.message || 'No se pudieron cargar stickers.');
+            }
+        });
+
+        chatForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const messageText = (messageInput.value || '').trim();
+            const hasFile = fileInput.files && fileInput.files[0];
+            const hasSticker = !!selectedSticker;
+
+            if (!messageText && !hasFile && !hasSticker) {
+                addSystemMessage('Escribe un mensaje, arrastra un archivo o selecciona sticker.');
+                return;
+            }
+
+            try {
+                if (hasFile || hasSticker) {
+                    await sendWithUpload(messageText);
+                    messageInput.value = '';
+                    messageInput.focus();
+                    return;
+                }
+
+                if (!canSendText()) {
+                    addSystemMessage('No hay conexión WebSocket activa.');
+                    return;
+                }
+
+                sendTextMessage(messageText);
+                messageInput.value = '';
+                messageInput.focus();
+            } catch (error) {
+                addSystemMessage(error.message || 'No se pudo enviar.');
+            }
+        });
+
+        renderFilePreview();
+        resetSticker();
+        loadStickers().catch(() => null);
+    }
+
+    const chatLog = document.getElementById('chat-log');
+    const chatForm = document.getElementById('chat-form');
+    const messageInput = document.getElementById('chat-message');
+    const fileInput = document.getElementById('chat-file');
+    const presenceUsers = document.getElementById('presence-users');
+    const composerRoot = document.getElementById('composer-root');
+
+    const PAGE_SIZE = 30;
+    let offset = 0;
+    let hasMore = true;
+    let loadingHistory = false;
+    const renderedMessageIds = new Set();
+    let presenceList = [];
+
+    function renderPresence() {
+        presenceUsers.textContent = `Usuarios activos: ${presenceList.length ? presenceList.join(', ') : '-'}`;
+    }
+
+    function addSystemMessage(text) {
+        const item = document.createElement('div');
+        item.className = 'notice';
+        item.textContent = text;
+        chatLog.appendChild(item);
+    }
+
+    function renderMessage(data, prepend = false) {
+        if (data.id && renderedMessageIds.has(data.id)) {
+            return;
+        }
+        if (data.id) {
+            renderedMessageIds.add(data.id);
         }
 
-        chatSocket.onmessage = (event) => {
+        const item = buildMessageNode(data);
+        if (prepend) {
+            chatLog.insertBefore(item, chatLog.firstChild);
+        } else {
+            chatLog.appendChild(item);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+    }
+
+    async function loadHistory() {
+        if (loadingHistory || !hasMore) {
+            return;
+        }
+
+        loadingHistory = true;
+        const oldHeight = chatLog.scrollHeight;
+        try {
+            const response = await fetch(`/api/rooms/${encodeURIComponent(roomName)}/messages/?limit=${PAGE_SIZE}&offset=${offset}`);
+            if (!response.ok) {
+                throw new Error('No se pudo cargar historial');
+            }
+
+            const data = await response.json();
+            (data.messages || []).forEach((msg) => renderMessage(msg, true));
+            offset += (data.messages || []).length;
+            hasMore = Boolean(data.has_more);
+
+            if (offset === (data.messages || []).length) {
+                chatLog.scrollTop = chatLog.scrollHeight;
+            } else {
+                chatLog.scrollTop = chatLog.scrollHeight - oldHeight;
+            }
+        } catch (error) {
+            addSystemMessage('No se pudo cargar historial.');
+        } finally {
+            loadingHistory = false;
+        }
+    }
+
+    function bindSocket(socket) {
+        socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
 
             if (data.event === 'message') {
                 renderMessage(data);
                 return;
             }
-
             if (data.event === 'presence_snapshot') {
                 presenceList = data.users || [];
                 renderPresence();
                 return;
             }
-
             if (data.event === 'user_joined') {
                 if (data.alias && !presenceList.includes(data.alias)) {
                     presenceList.push(data.alias);
@@ -486,40 +668,71 @@
                 addSystemMessage(`${data.alias} entró al canal.`);
                 return;
             }
-
             if (data.event === 'user_left') {
                 presenceList = presenceList.filter((name) => name !== data.alias);
                 renderPresence();
                 addSystemMessage(`${data.alias} salió del canal.`);
                 return;
             }
-
             if (data.event === 'throttled') {
                 addSystemMessage(data.detail || 'Estás enviando mensajes demasiado rápido.');
             }
         };
 
-        chatSocket.onclose = () => {
-            addSystemMessage('Conexión de chat cerrada. Recarga la página para reconectar.');
+        socket.onclose = () => {
+            addSystemMessage('Conexión cerrada. Recarga la página para reconectar.');
         };
+    }
+
+    let textSocket = new WebSocket(socketUrl);
+    bindSocket(textSocket);
+
+    setupComposer({
+        root: composerRoot,
+        chatForm,
+        messageInput,
+        fileInput,
+        addSystemMessage,
+        renderMessage,
+        sendTextMessage: (messageText) => {
+            textSocket.send(JSON.stringify({ alias: displayName, message: messageText }));
+        },
+        canSendText: () => textSocket.readyState === WebSocket.OPEN,
+    });
+
+    chatLog.addEventListener('scroll', () => {
+        if (chatLog.scrollTop <= 20) {
+            loadHistory();
+        }
+    });
+
+    setInterval(() => {
+        if (textSocket.readyState === WebSocket.OPEN) {
+            textSocket.send(JSON.stringify({ event: 'ping' }));
+        }
+    }, 15000);
+
+    loadHistory();
+
+    if (isVoiceRoom) {
+        let voiceChat = null;
+        const sidebarVoiceUsersElement = document.getElementById('voice-sidebar-users');
 
         function renderVoiceUsers(users) {
             if (!sidebarVoiceUsersElement) {
                 return;
             }
-
             if (!users || !users.length) {
                 sidebarVoiceUsersElement.textContent = 'Conectados: nadie por ahora';
                 return;
             }
-
             sidebarVoiceUsersElement.innerHTML = `Conectados: <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">${users.map((name) => `<span class="channel-badge">${name}</span>`).join('')}</div>`;
         }
 
         document.getElementById('btn-voice-toggle').addEventListener('click', async function() {
             if (!voiceChat) {
                 voiceChat = new VoiceChat({
-                    roomName: roomName,
+                    roomName,
                     alias: displayName,
                     wsUrl: voiceSocketUrl,
                     iceServers: webrtcIceServers,
@@ -529,19 +742,17 @@
                         document.getElementById('voice-status').textContent = state.connected ? 'Conectado a voz' : '';
                         if (!state.connected) {
                             renderVoiceUsers([]);
-                        } else if (voiceChat) {
+                        } else {
                             renderVoiceUsers(Array.from(voiceChat.voiceUsers.keys()));
                         }
                     },
-                    onUserJoin: function(users) {
+                    onUserJoin: function() {
                         renderVoiceUsers(Array.from(voiceChat.voiceUsers.keys()));
                     },
-                    onUserLeave: function(users) {
+                    onUserLeave: function() {
                         renderVoiceUsers(Array.from(voiceChat.voiceUsers.keys()));
-                        console.log('Usuario salió de voz:', users);
                     },
                     onError: function(error) {
-                        console.error('Voice error:', error);
                         alert('Error de voz: ' + error);
                     }
                 });
@@ -557,9 +768,14 @@
                 document.getElementById('btn-mute').style.display = 'none';
                 document.getElementById('btn-voice-toggle').textContent = '🎤 Conectar voz';
                 document.getElementById('voice-status').textContent = '';
-                if (sidebarVoiceUsersElement) {
-                    sidebarVoiceUsersElement.textContent = 'Conectados: nadie por ahora';
-                }
+                renderVoiceUsers([]);
+            }
+        });
+
+        document.getElementById('btn-mute').addEventListener('click', function() {
+            if (voiceChat) {
+                const muted = voiceChat.toggleMute();
+                this.textContent = muted ? '🔇 Activar' : '🔊 Silenciar';
             }
         });
 
@@ -571,81 +787,6 @@
                 }
             });
         });
-
-        document.getElementById('btn-mute').addEventListener('click', function() {
-            if (voiceChat) {
-                const muted = voiceChat.toggleMute();
-                this.textContent = muted ? '🔇 Activar' : '🔊 Silenciar';
-            }
-        });
-
-        if (chatForm) {
-            chatLog.addEventListener("scroll", () => {
-                if (chatLog.scrollTop <= 20) {
-                    loadHistory();
-                }
-            });
-
-            setInterval(() => {
-                if (chatSocket.readyState === WebSocket.OPEN) {
-                    chatSocket.send(JSON.stringify({ event: "ping" }));
-                }
-            }, 15000);
-
-            loadHistory();
-
-            chatForm.addEventListener("submit", (event) => {
-                event.preventDefault();
-
-                const messageText = (messageInput.value || '').trim();
-                const selectedFile = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
-
-                if (!messageText && !selectedFile) {
-                    addSystemMessage('Escribe un mensaje o adjunta un archivo.');
-                    return;
-                }
-
-                if (selectedFile) {
-                    const formData = new FormData();
-                    formData.append('message', messageText);
-                    formData.append('attachment', selectedFile);
-
-                    fetch(attachmentUploadUrl, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': csrfToken,
-                        },
-                        body: formData,
-                    }).then(async (response) => {
-                        const data = await response.json();
-                        if (!response.ok) {
-                            throw new Error(data.error || 'No se pudo subir el archivo.');
-                        }
-
-                        if (data.message) {
-                            renderMessage(data.message);
-                        }
-
-                        messageInput.value = '';
-                        fileInput.value = '';
-                        messageInput.focus();
-                    }).catch((error) => {
-                        addSystemMessage(error.message || 'No se pudo subir el archivo.');
-                    });
-                    return;
-                }
-
-                if (chatSocket.readyState !== WebSocket.OPEN) {
-                    addSystemMessage('No hay conexión de chat activa.');
-                    return;
-                }
-
-                chatSocket.send(JSON.stringify({ alias: displayName, message: messageText }));
-                messageInput.value = "";
-                fileInput.value = '';
-                messageInput.focus();
-            });
-        }
     }
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/simple-peer/9.11.1/simplepeer.min.js"></script>

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Message, Profile, Room
+from .models import Message, Profile, Room, Sticker
 
 
 @admin.register(Room)
@@ -28,3 +28,10 @@ class MessageAdmin(admin.ModelAdmin):
     @staticmethod
     def short_content(obj):
         return obj.content[:60]
+
+
+@admin.register(Sticker)
+class StickerAdmin(admin.ModelAdmin):
+    list_display = ("name", "owner", "created_at")
+    search_fields = ("name", "owner__username")
+    ordering = ("-created_at",)

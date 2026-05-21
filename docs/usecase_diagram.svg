@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+  <style>
+    .actor { font: 16px sans-serif; }
+    .usecase { fill:#f7f7f9; stroke:#333; stroke-width:1.5 }
+    .label { font:14px sans-serif; }
+  </style>
+  <!-- Actors -->
+  <g class="actor" id="actor-user">
+    <rect x="40" y="80" width="120" height="40" rx="6" fill="#eaf2ff" stroke="#1f6feb" />
+    <text x="100" y="105" text-anchor="middle">Usuario</text>
+  </g>
+  <g class="actor" id="actor-admin">
+    <rect x="1040" y="80" width="140" height="40" rx="6" fill="#fff4e6" stroke="#f59e0b" />
+    <text x="1110" y="105" text-anchor="middle">Administrador</text>
+  </g>
+
+  <!-- Use cases -->
+  <ellipse class="usecase" cx="600" cy="90" rx="220" ry="36" />
+  <text class="label" x="600" y="96" text-anchor="middle">Registrarse / Iniciar sesión</text>
+
+  <ellipse class="usecase" cx="600" cy="170" rx="180" ry="36" />
+  <text class="label" x="600" y="176" text-anchor="middle">Ver / Editar perfil</text>
+
+  <ellipse class="usecase" cx="600" cy="260" rx="200" ry="36" />
+  <text class="label" x="600" y="266" text-anchor="middle">Crear sala de voz</text>
+
+  <ellipse class="usecase" cx="600" cy="340" rx="200" ry="36" />
+  <text class="label" x="600" y="346" text-anchor="middle">Unirse a sala de voz</text>
+
+  <ellipse class="usecase" cx="600" cy="420" rx="220" ry="36" />
+  <text class="label" x="600" y="426" text-anchor="middle">Enviar / Recibir mensajes</text>
+
+  <ellipse class="usecase" cx="600" cy="500" rx="180" ry="36" />
+  <text class="label" x="600" y="506" text-anchor="middle">Adjuntar archivo a mensaje</text>
+
+  <!-- Relaciones simples -->
+  <line x1="160" y1="100" x2="380" y2="96" stroke="#444" stroke-width="1" />
+  <line x1="1140" y1="100" x2="820" y2="96" stroke="#444" stroke-width="1" />
+
+  <text x="40" y="40" font-size="18" font-family="sans-serif">Diagrama de Casos de Uso - Ciclo 1</text>
+  <rect x="10" y="10" width="1180" height="580" fill="none" stroke="#ddd" />
+</svg>

@@ -22,4 +22,10 @@ urlpatterns = [
         views.api_room_attachment,
         name='api-room-attachment',
     ),
+    path('api/stickers/', views.api_stickers, name='api-stickers'),
+    path(
+        'api/stickers/<int:sticker_id>/',
+        views.api_sticker_detail,
+        name='api-sticker-detail',
+    ),
 ]

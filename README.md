@@ -159,11 +159,16 @@ Para generar un paquete limpio para otra PC (sin `.venv`, sin `__pycache__`, sin
 - `chat/routing.py`: rutas WebSocket.
 - `chat/templates/chat/`: vistas HTML para pruebas de integración.
 
-## Tareas pendientes
+## Estado actual
 
-Ver [`TAREAS_TRELLO.md`](./TAREAS_TRELLO.md) para:
-- **Compañero 1** (Audio/WebRTC): Chat de voz, integración WebRTC, signaling, pruebas (8 tareas)
-- **Compañero 2** (Frontend/Auth): Login, gestión de salas, UI mejorada, perfil (5 tareas)
-- **Tu parte** (Backend optimizado): Historial lazy-load, optimización BD/WebSocket, tests, API REST, despliegue (8 tareas)
+- Chat por WebSocket con presencia, heartbeat y throttling.
+- Historial paginado con carga incremental.
+- Adjuntos con previsualización (imagen/archivo) en chat.
+- Emojis y stickers personalizados persistentes por usuario.
+- Soporte de canales de voz con WebRTC.
 
-Todas incluyen descripción detallada, criterios de aceptación y tips de optimización de recursos.
+## Notas de orden del repositorio
+
+- `dist/` se usa para empaquetado LAN generado.
+- `docs/` contiene artefactos y notas de análisis.
+- Para no ensuciar el historial, evita subir archivos de prueba temporales o ZIPs manuales.

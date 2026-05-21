@@ -1,0 +1,16 @@
+%% Diagrama de Casos de Uso (Mermaid)
+%% Actores: Usuario, Administrador, Sistema (backend)
+%% Guardar/abrir con herramientas que soporten Mermaid (ej. https://mermaid.live)
+sequenceDiagram
+  Note over U,A: Este archivo contiene la especificación mermaid del Diagrama de Casos de Uso
+
+%% Use Case (Mermaid "usecaseDiagram" no es estándar en todas las renderizaciones)
+%% Alternativa: usar el siguiente bloque de texto en herramientas Mermaid que acepten relaciones simples
+graph LR
+  U[Usuario] --> RU((Registrarse / Iniciar sesión))
+  U --> VP((Ver/Editar perfil))
+  U --> CS((Crear sala de voz))
+  U --> US((Unirse a sala de voz))
+  U --> MS((Enviar/Recibir mensajes))
+  U --> AF((Adjuntar archivo a mensaje))
+  A[Administrador] --> GA((Gestionar salas y usuarios))

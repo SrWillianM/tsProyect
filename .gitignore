@@ -22,6 +22,8 @@ media/
 .ruff_cache/
 .coverage
 htmlcov/
+dist/*.zip
+dist/lan-package/
 
 # Editors / OS
 .vscode/

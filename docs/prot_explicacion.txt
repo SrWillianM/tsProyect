@@ -1,0 +1,45 @@
+Resumen de artefactos y trazabilidad
+
+1) Alcance del primer ciclo
+- Registro / Inicio de sesión
+- Perfil de usuario (ver/editar)
+- Salas de voz: crear, unirse y comunicación en sala (voz + chat)
+- Mensajería básica con adjuntos
+
+2) Diagrama de Casos de Uso
+- Archivo: docs/usecase_diagram.svg
+- Especificación (Mermaid): docs/usecases.mmd
+
+Actores modelados:
+- Usuario: interactúa con registro, perfil, salas y mensajería.
+- Administrador: gestión de salas y usuarios.
+- Sistema (backend): confirmado implícitamente como responsable de autenticación, signaling WebRTC y mensajes.
+
+3) Prototipos entregados
+- docs/prototype_login.svg -> corresponde al Caso de Uso: Registrarse / Iniciar sesión.
+  Criterios de aceptación cubiertos: campos de correo y contraseña, enlace a registro, errores visibles.
+
+- docs/prototype_profile.svg -> corresponde al Caso de Uso: Ver / Editar perfil.
+  Criterios de aceptación cubiertos: mostrar datos del usuario, edición de biografía, guardar cambios.
+
+- docs/prototype_room.svg -> corresponde a los Casos de Uso: Crear sala de voz, Unirse a sala de voz, Enviar/Recibir mensajes.
+  Criterios de aceptación cubiertos: lista de salas, vista de sala (participantes), controles (silenciar, salir), chat en sala, envío de mensajes.
+
+4) Trazabilidad
+- Cada prototipo está enlazado arriba con su Caso de Uso respectivo. Los criterios de aceptación están anotados al lado de cada prototipo.
+
+5) Principios de usabilidad aplicados
+- Consistencia visual entre pantallas (botones principales en azul/verde).
+- Visibilidad del estado: controles de silenciar/salida y área de chat con botón de envío.
+- Prevención de errores: formularios con campos claros; diseño pensado para mensajes y confirmación al guardar perfil.
+
+6) Siguientes pasos recomendados
+- Convertir prototipos a componentes HTML/CSS reutilizables.
+- Implementar pruebas de aceptación end-to-end para las historias vinculadas.
+- Añadir versiones de media fidelidad (interacciones y estados reales) antes de la integración WebRTC.
+
+7) Cómo ver y editar
+- Los archivos SVG pueden abrirse directamente en navegadores o editores vectoriales.
+- El archivo Mermaid `docs/usecases.mmd` puede visualizarse en https://mermaid.live pegando su contenido.
+
+Generado automáticamente como entregable para el ciclo 1.

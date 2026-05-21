@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <style>
+    .panel { fill:#ffffff; stroke:#ccc }
+    .title { font:20px sans-serif; font-weight:700 }
+    .label { font:14px sans-serif; fill:#333 }
+    .input { fill:#f8f8f8; stroke:#ddd }
+    .btn { fill:#1f6feb; stroke:#1f6feb; color:#fff }
+  </style>
+  <rect x="40" y="40" width="720" height="520" rx="10" fill="#f2f6fb" />
+  <rect x="140" y="120" width="520" height="360" rx="8" class="panel" />
+  <text x="400" y="160" text-anchor="middle" class="title">Iniciar sesión</text>
+
+  <text x="180" y="220" class="label">Correo electrónico</text>
+  <rect x="180" y="235" width="440" height="36" rx="4" class="input" />
+
+  <text x="180" y="295" class="label">Contraseña</text>
+  <rect x="180" y="310" width="440" height="36" rx="4" class="input" />
+
+  <rect x="320" y="380" width="160" height="40" rx="6" fill="#1f6feb" />
+  <text x="400" y="407" text-anchor="middle" fill="#fff">Entrar</text>
+
+  <text x="180" y="460" class="label">¿No tienes cuenta? <tspan fill="#1f6feb">Regístrate</tspan></text>
+</svg>

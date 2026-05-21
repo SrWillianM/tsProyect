@@ -29,6 +29,35 @@ curl -X DELETE http://127.0.0.1:8000/api/rooms/1/
 curl -X GET "http://127.0.0.1:8000/api/rooms/General/messages/?limit=30&offset=0"
 ```
 
+### Subir adjunto o enviar sticker a una sala (sesión autenticada)
+```bash
+curl -X POST "http://127.0.0.1:8000/api/rooms/General/attachments/" \
+  -F "message=hola" \
+  -F "attachment=@./imagen.png"
+```
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/rooms/General/attachments/" \
+  -F "sticker_id=1"
+```
+
+### Listar stickers del usuario autenticado
+```bash
+curl -X GET "http://127.0.0.1:8000/api/stickers/"
+```
+
+### Crear sticker personalizado
+```bash
+curl -X POST "http://127.0.0.1:8000/api/stickers/" \
+  -F "name=Feliz" \
+  -F "sticker=@./feliz.png"
+```
+
+### Eliminar sticker
+```bash
+curl -X DELETE "http://127.0.0.1:8000/api/stickers/1/"
+```
+
 ## WebSocket
 
 ### URL

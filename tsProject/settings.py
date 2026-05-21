@@ -20,11 +20,16 @@ DEBUG = True
 # ==================== ALLOWED_HOSTS (MODIFICADO PARA RED LOCAL) ====================
 # Permite acceso desde otras computadoras en la misma red
 ALLOWED_HOSTS = [
+    
     'localhost',
     '127.0.0.1',
     '172.20.10.3',      # Tu IP actual (Wi-Fi)
     '172.20.10.2',      # IP de la otra PC
     '*',                # Permite cualquier IP (útil para pruebas locales)
+]
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.ngrok-free.dev',
+    'https://cussed-cilantro-oboe.ngrok-free.dev',
 ]
 
 # ==================== WebRTC Configuration ====================

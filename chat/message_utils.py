@@ -29,6 +29,15 @@ def serialize_message(message, source="live"):
             }
         )
 
+    if message.sticker and message.sticker.image:
+        payload.update(
+            {
+                "sticker_id": message.sticker_id,
+                "sticker_name": message.sticker.name,
+                "sticker_url": message.sticker.image.url,
+            }
+        )
+
     return payload
 
 
@@ -39,6 +48,7 @@ def create_message_payload(
     attachment=None,
     attachment_name="",
     attachment_mime="",
+    sticker=None,
 ):
     room, _ = Room.objects.get_or_create(name=room_name)
     message = Message.objects.create(
@@ -48,5 +58,6 @@ def create_message_payload(
         attachment=attachment,
         attachment_name=attachment_name,
         attachment_mime=attachment_mime,
+        sticker=sticker,
     )
     return serialize_message(message)

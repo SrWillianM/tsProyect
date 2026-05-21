@@ -40,6 +40,23 @@ class Profile(models.Model):
         return self.nickname
 
 
+class Sticker(models.Model):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="stickers",
+    )
+    name = models.CharField(max_length=60)
+    image = models.FileField(upload_to="stickers/")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.owner_id}:{self.name}"
+
+
 def default_nickname(user):
     base_name = (user.get_username() or "Usuario").strip()
     return base_name[:50] or "Usuario"
@@ -52,6 +69,13 @@ class Message(models.Model):
     attachment = models.FileField(upload_to="chat_attachments/", blank=True, null=True)
     attachment_name = models.CharField(max_length=255, blank=True, default="")
     attachment_mime = models.CharField(max_length=100, blank=True, default="")
+    sticker = models.ForeignKey(
+        Sticker,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="messages",
+    )
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -65,6 +89,9 @@ class Message(models.Model):
         preview = (
             self.content[:30]
             if self.content
-            else self.attachment_name or "archivo"
+            else (
+                self.attachment_name
+                or (self.sticker.name if self.sticker else "archivo")
+            )
         )
         return f"[{self.room.name}] {self.alias}: {preview}"

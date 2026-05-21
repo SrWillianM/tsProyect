@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="700" viewBox="0 0 1000 700">
+  <style>
+    .panel { fill:#fff; stroke:#e6e6e6 }
+    .title { font:18px sans-serif }
+    .btn { fill:#10b981; stroke:#10b981 }
+    .muted { fill:#6b7280 }
+  </style>
+  <rect x="20" y="20" width="960" height="660" rx="10" fill="#f8fafc" />
+  <rect x="40" y="60" width="300" height="580" class="panel" rx="6" />
+  <text x="190" y="92" text-anchor="middle" class="title">Salas</text>
+  <rect x="370" y="60" width="600" height="420" class="panel" rx="6" />
+  <text x="670" y="92" text-anchor="middle" class="title">Sala: Voz en directo</text>
+
+  <!-- Placeholder for participants -->
+  <rect x="390" y="120" width="120" height="120" rx="8" fill="#eef2ff" stroke="#c7d2fe" />
+  <text x="450" y="190" text-anchor="middle">Usuario A</text>
+  <rect x="530" y="120" width="120" height="120" rx="8" fill="#fff7ed" stroke="#ffd7a6" />
+  <text x="590" y="190" text-anchor="middle">Usuario B</text>
+
+  <!-- Controls -->
+  <rect x="390" y="260" width="120" height="36" rx="6" class="btn" />
+  <text x="450" y="285" text-anchor="middle" fill="#fff">Silenciar</text>
+  <rect x="530" y="260" width="120" height="36" rx="6" fill="#ef4444" />
+  <text x="590" y="285" text-anchor="middle" fill="#fff">Salir</text>
+
+  <rect x="370" y="500" width="600" height="120" rx="6" class="panel" />
+  <text x="420" y="532" class="muted">Chat de texto en sala</text>
+  <rect x="420" y="560" width="420" height="36" rx="6" fill="#fff" stroke="#e5e7eb" />
+  <text x="860" y="585" fill="#10b981">Enviar</text>
+</svg>

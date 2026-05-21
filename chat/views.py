@@ -13,7 +13,7 @@ from channels.layers import get_channel_layer
 
 from .forms import ProfileForm, RoomCreateForm, SignUpForm
 from .message_utils import create_message_payload, serialize_message
-from .models import ChannelKind, Profile, Room, default_nickname
+from .models import ChannelKind, Profile, Room, Sticker, default_nickname
 
 
 def _rooms_by_kind():
@@ -157,6 +157,13 @@ def _parse_pagination(query_dict):
     return limit, offset
 
 
+def _parse_int(value, default=None):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 @require_http_methods(["GET", "POST"])
 def api_rooms(request):
     if not request.user.is_authenticated:
@@ -253,8 +260,20 @@ def api_room_messages(request, room_name):
         )
 
     rows = list(
-        room.messages.select_related("room")
-        .only("id", "alias", "content", "timestamp", "room__name")
+        room.messages.select_related("room", "sticker")
+        .only(
+            "id",
+            "alias",
+            "content",
+            "timestamp",
+            "room__name",
+            "sticker",
+            "sticker__name",
+            "sticker__image",
+            "attachment",
+            "attachment_name",
+            "attachment_mime",
+        )
         .order_by("-timestamp")[offset : offset + limit + 1]
     )
 
@@ -292,9 +311,22 @@ def api_room_attachment(request, room_name):
     alias = _ensure_profile(request.user).nickname
     message_text = (request.POST.get("message") or "").strip()[:1000]
     attachment = request.FILES.get("attachment")
+    sticker_id = _parse_int(request.POST.get("sticker_id"))
+    sticker = None
 
-    if not attachment and not message_text:
-        return JsonResponse({"error": "Attachment or message is required"}, status=400)
+    if sticker_id:
+        sticker = (
+            Sticker.objects.filter(id=sticker_id, owner=request.user)
+            .only("id", "name", "image")
+            .first()
+        )
+        if sticker is None:
+            return JsonResponse({"error": "Sticker no encontrado"}, status=404)
+
+    if not attachment and not message_text and sticker is None:
+        return JsonResponse(
+            {"error": "Attachment, sticker or message is required"}, status=400
+        )
 
     payload = create_message_payload(
         room_name,
@@ -303,6 +335,7 @@ def api_room_attachment(request, room_name):
         attachment=attachment,
         attachment_name=getattr(attachment, "name", "") or "",
         attachment_mime=getattr(attachment, "content_type", "") or "",
+        sticker=sticker,
     )
 
     channel_layer = get_channel_layer()
@@ -311,3 +344,51 @@ def api_room_attachment(request, room_name):
     )
 
     return JsonResponse({"message": payload}, status=201)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def api_stickers(request):
+    if request.method == "GET":
+        stickers = list(
+            Sticker.objects.filter(owner=request.user)
+            .only("id", "name", "image", "created_at")
+            .values("id", "name", "image", "created_at")
+        )
+        for item in stickers:
+            item["url"] = (
+                settings.MEDIA_URL + item["image"] if item.get("image") else ""
+            )
+            item.pop("image", None)
+        return JsonResponse({"stickers": stickers})
+
+    sticker_file = request.FILES.get("sticker")
+    name = (request.POST.get("name") or "").strip()[:60]
+    if not sticker_file:
+        return JsonResponse({"error": "Debes seleccionar una imagen"}, status=400)
+    if not (sticker_file.content_type or "").startswith("image/"):
+        return JsonResponse({"error": "El sticker debe ser una imagen"}, status=400)
+    if not name:
+        name = sticker_file.name.rsplit(".", 1)[0][:60] or "Sticker"
+
+    sticker = Sticker.objects.create(owner=request.user, name=name, image=sticker_file)
+    return JsonResponse(
+        {
+            "sticker": {
+                "id": sticker.id,
+                "name": sticker.name,
+                "url": sticker.image.url,
+                "created_at": sticker.created_at,
+            }
+        },
+        status=201,
+    )
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def api_sticker_detail(request, sticker_id):
+    deleted, _ = Sticker.objects.filter(id=sticker_id, owner=request.user).delete()
+    if not deleted:
+        return JsonResponse({"error": "Sticker no encontrado"}, status=404)
+    return JsonResponse({"deleted": True})

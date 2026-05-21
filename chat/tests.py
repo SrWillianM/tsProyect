@@ -8,7 +8,7 @@ from django.test import TestCase, TransactionTestCase, override_settings
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from chat.models import Message, Room
+from chat.models import Message, Room, Sticker
 from tsProject.asgi import application
 
 
@@ -200,3 +200,77 @@ class ChatApiTests(TestCase):
                 self.assertEqual(payload["message"]["message"], "Mira esto")
                 self.assertTrue(payload["message"]["attachment_is_image"])
                 self.assertTrue(Message.objects.filter(room=self.room).count() > 0)
+
+    def test_stickers_endpoint_creates_and_lists_stickers(self):
+        with tempfile.TemporaryDirectory() as media_root:
+            with override_settings(MEDIA_ROOT=media_root):
+                png_bytes = (
+                    b"\x89PNG\r\n\x1a\n"
+                    b"\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+                    b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
+                    b"\x00\x00\x00\x0bIDATx\x9cc``\x00\x00\x00\x03\x00\x01"
+                    b"+\tM\x84\x00\x00\x00\x00IEND\xaeB`\x82"
+                )
+                uploaded_file = SimpleUploadedFile(
+                    "feliz.png",
+                    png_bytes,
+                    content_type="image/png",
+                )
+
+                create_response = self.client.post(
+                    "/api/stickers/",
+                    data={"name": "Feliz", "sticker": uploaded_file},
+                )
+                self.assertEqual(create_response.status_code, 201)
+
+                list_response = self.client.get("/api/stickers/")
+                self.assertEqual(list_response.status_code, 200)
+                payload = json.loads(list_response.content)
+                self.assertEqual(len(payload["stickers"]), 1)
+                self.assertEqual(payload["stickers"][0]["name"], "Feliz")
+
+    def test_attachment_endpoint_accepts_sticker_id(self):
+        with tempfile.TemporaryDirectory() as media_root:
+            with override_settings(MEDIA_ROOT=media_root):
+                png_bytes = (
+                    b"\x89PNG\r\n\x1a\n"
+                    b"\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+                    b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
+                    b"\x00\x00\x00\x0bIDATx\x9cc``\x00\x00\x00\x03\x00\x01"
+                    b"+\tM\x84\x00\x00\x00\x00IEND\xaeB`\x82"
+                )
+                sticker = Sticker.objects.create(
+                    owner=self.user,
+                    name="Sticker Uno",
+                    image=SimpleUploadedFile(
+                        "uno.png", png_bytes, content_type="image/png"
+                    ),
+                )
+
+                response = self.client.post(
+                    "/api/rooms/General/attachments/",
+                    data={"sticker_id": sticker.id, "message": ""},
+                )
+
+                self.assertEqual(response.status_code, 201)
+                payload = json.loads(response.content)
+                self.assertEqual(payload["message"]["sticker_id"], sticker.id)
+                self.assertIn("sticker_url", payload["message"])
+
+    def test_sticker_delete_endpoint_removes_owned_sticker(self):
+        with tempfile.TemporaryDirectory() as media_root:
+            with override_settings(MEDIA_ROOT=media_root):
+                sticker = Sticker.objects.create(
+                    owner=self.user,
+                    name="Sticker Borrar",
+                    image=SimpleUploadedFile(
+                        "borrar.png",
+                        b"\x89PNG\r\n\x1a\n",
+                        content_type="image/png",
+                    ),
+                )
+
+                response = self.client.delete(f"/api/stickers/{sticker.id}/")
+
+                self.assertEqual(response.status_code, 200)
+                self.assertFalse(Sticker.objects.filter(id=sticker.id).exists())
