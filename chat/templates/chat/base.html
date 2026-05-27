@@ -266,6 +266,59 @@
             border: 1px solid var(--line);
         }
 
+        .form-box input,
+        .form-box select,
+        .form-box textarea {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .form-box select {
+            appearance: none;
+        }
+
+        .call-card {
+            display: grid;
+            gap: 12px;
+            padding: 18px;
+            border-radius: 22px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.03);
+            box-shadow: var(--shadow);
+        }
+
+        .video-grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .video-card {
+            display: grid;
+            gap: 10px;
+            padding: 16px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .video-card h4 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .call-controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .volume-slider {
+            width: 100%;
+        }
+
         .form-grid {
             display: grid;
             gap: 12px;
@@ -281,10 +334,17 @@
         textarea {
             width: 100%;
             border: 1px solid var(--line);
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.06);
             color: var(--text);
             padding: 12px 14px;
             outline: none;
+        }
+
+        .form-box input,
+        .form-box select,
+        .form-box textarea {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
         }
 
         input:focus,
@@ -332,7 +392,7 @@
 <div class="app-shell">
     <header class="topbar">
         <div class="brand">
-            <strong>TsPy</strong>
+            <a href="{% url 'chat-index' %}"><strong>TsPy</strong></a>
         </div>
         <div class="topbar-actions">
             {% if user.is_authenticated %}
@@ -366,15 +426,12 @@
                     <div class="channel-box" style="display:grid; gap:12px;">
                         <div>
                             <div class="muted">Voz</div>
-                            <strong>{{ room.name }}</strong>
+                            <strong>Este canal ofrece voz y video opcional</strong>
                         </div>
-                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-                            <button id="btn-voice-toggle" type="button">🎤 Conectar voz</button>
-                            <button id="btn-mute" type="button" style="display:none;">🔊 Silenciar</button>
-                            <span id="voice-status" class="muted"></span>
-                        </div>
-                        <div id="voice-sidebar-users" class="empty-state" style="padding:12px;">
-                            Conectados: nadie por ahora
+                        <p class="muted">Activa tu cámara cuando quieras; los controles de voz y video están dentro de la sala.</p>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                            <a class="btn btn-ghost" href="#voice-controls">Ir a controles</a>
+                            <a class="btn btn-ghost" href="#chat-form">Ir al chat</a>
                         </div>
                     </div>
                 {% endif %}

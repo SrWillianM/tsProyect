@@ -31,7 +31,9 @@ class VoiceChat {
         // Estado
         this.isConnected = false;
         this.isMuted = false;
+        this.cameraEnabled = false;
         this.localStream = null;
+        this.localVideo = null;
         this.peers = new Map(); // peerId -> { peer, alias }
         this.voiceUsers = new Map(); // alias -> { connected, muted }
         
@@ -39,6 +41,8 @@ class VoiceChat {
         this.onVoiceStateChange = options.onVoiceStateChange || (() => {});
         this.onUserJoin = options.onUserJoin || (() => {});
         this.onUserLeave = options.onUserLeave || (() => {});
+        this.onLocalStream = options.onLocalStream || (() => {});
+        this.onRemoteStream = options.onRemoteStream || (() => {});
         this.onError = options.onError || console.error;
         
         // WebSocket de señalización
@@ -49,24 +53,33 @@ class VoiceChat {
     /**
      * Inicializar conexión de voz
      */
-    async connect() {
+    async connect(video = false) {
         try {
             const runningOnLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
             if (!window.isSecureContext && !runningOnLocalhost) {
-                this.onError('Para chat de voz fuera de localhost necesitas HTTPS. Publica el sitio con TLS antes de usar microfono.');
+                this.onError('Para chat de voz/videollamada fuera de localhost necesitas HTTPS. Publica el sitio con TLS antes de usar micrófono o cámara.');
                 return false;
             }
 
-            // Obtener stream de audio
-            this.localStream = await navigator.mediaDevices.getUserMedia({
+            this.cameraEnabled = !!video;
+            const constraints = {
                 audio: {
                     echoCancellation: true,
                     noiseSuppression: true,
                     autoGainControl: true
                 },
-                video: false
-            });
-            
+                video: this.cameraEnabled
+                    ? {
+                        width: { ideal: 640 },
+                        height: { ideal: 360 },
+                        facingMode: 'user'
+                    }
+                    : false
+            };
+
+            this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+            this.onLocalStream(this.localStream, this.cameraEnabled);
+
             // El audio NO está muteado por defecto - el usuario puede hablar directamente
             // El mute es solo para silenciar, no para activar
             
@@ -75,7 +88,7 @@ class VoiceChat {
             
             return true;
         } catch (error) {
-            this.onError('Error al conectar voz: ' + error.message);
+            this.onError('Error al conectar voz/videollamada: ' + error.message);
             return false;
         }
     }
@@ -97,21 +110,25 @@ class VoiceChat {
                 type: 'join',
                 alias: this.alias
             });
-            this.onVoiceStateChange({ connected: true });
+            this.onVoiceStateChange({ connected: true, cameraEnabled: this.cameraEnabled, muted: this.isMuted });
         };
         
         this.socket.onmessage = (event) => {
             this._handleSignalingMessage(JSON.parse(event.data));
         };
         
-        this.socket.onclose = () => {
-            console.log('[Voice] WebSocket de señalización cerrado');
+        this.socket.onclose = (event) => {
+            console.log('[Voice] WebSocket de señalización cerrado', event);
             this.isConnected = false;
             this._cleanupAllPeers();
-            this.onVoiceStateChange({ connected: false });
+            this.onVoiceStateChange({ connected: false, cameraEnabled: false, muted: false });
+            if (event.code !== 1000 && event.code !== 1001) {
+                this.onError(`Error en WebSocket de señalización: cierre ${event.code}`);
+            }
         };
         
         this.socket.onerror = (error) => {
+            console.error('[Voice] Error de WebSocket de señalización', error);
             this.onError('Error en WebSocket de señalización');
         };
     }
@@ -299,7 +316,13 @@ class VoiceChat {
      * Manejar stream remoto
      */
     _handleRemoteStream(alias, stream) {
-        // Crear elemento de audio y reproducir
+        // Llamada de retorno a la UI para mostrar video/audio remoto
+        if (typeof this.onRemoteStream === 'function') {
+            this.onRemoteStream(alias, stream);
+            return;
+        }
+
+        // Fallback: crear elemento de audio si no hay callback
         const audio = new Audio();
         audio.srcObject = stream;
         audio.autoplay = true;
@@ -343,7 +366,7 @@ class VoiceChat {
             muted: this.isMuted
         });
         
-        this.onVoiceStateChange({ muted: this.isMuted });
+        this.onVoiceStateChange({ connected: this.isConnected, cameraEnabled: this.cameraEnabled, muted: this.isMuted });
         return this.isMuted;
     }
 

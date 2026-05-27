@@ -9,7 +9,14 @@
         <div>
             <div class="channel-badge">{{ room.get_kind_display }}</div>
             <h1 style="margin-top:10px;">{{ room.name }}</h1>
-            <p class="muted">{% if is_voice_room %}Canal de voz dedicado.{% else %}Canal de chat con historial y presencia.{% endif %}</p>
+            <p class="muted">{% if is_voice_room %}Canal de voz dedicado con cámara opcional.{% else %}Canal de chat con historial y presencia.{% endif %}</p>
+            {% if is_voice_room %}
+            <div class="call-controls" style="margin-top:10px; gap:8px; align-items:center;">
+                <span class="channel-badge">Chat</span>
+                <span class="channel-badge">Voz</span>
+                <span class="muted">Cámara opcional en esta sala</span>
+            </div>
+            {% endif %}
         </div>
         <div class="channel-box">
             <div class="muted">Apodo activo</div>
@@ -70,6 +77,27 @@
         </div>
         <button type="submit">Enviar</button>
     </form>
+    {% if is_voice_room %}
+    <section class="card" style="margin-top:16px;">
+        <div id="voice-controls" style="display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap; margin-bottom:12px;">
+            <div>
+                <h2>Control de voz</h2>
+                <p class="muted">Conéctate en voz, o habilita la cámara cuando lo necesites. La sala mantiene chat y audio como el foco principal.</p>
+            </div>
+            <div class="call-controls" style="justify-content:flex-end;">
+                <button id="btn-room-voice-toggle" class="btn btn-ghost" type="button">🎤 Conectar voz</button>
+                <button id="btn-room-video-toggle" class="btn btn-ghost" type="button">📹 Activar cámara</button>
+                <button id="btn-room-hangup" class="btn btn-warn" type="button" style="display:none;">📴 Colgar</button>
+                <button id="btn-room-mute" class="btn btn-ghost" type="button" style="display:none;">🔇 Silenciar</button>
+            </div>
+        </div>
+        <div class="empty-state" style="margin-top:10px;">
+            Las transmisiones aparecen en este panel cuando estás conectado. La opción de cámara está integrada, no la función principal.
+        </div>
+        <div id="video-panel" class="video-grid" style="margin-top:14px;"></div>
+        <div id="voice-sidebar-users" class="empty-state" style="margin-top:12px;">Conectados: nadie por ahora</div>
+    </section>
+    {% endif %}
 </section>
 
 {{ webrtc_ice_servers|json_script:"webrtc-ice-servers" }}
@@ -716,7 +744,144 @@
 
     if (isVoiceRoom) {
         let voiceChat = null;
+        let currentVoiceState = { connected: false, cameraEnabled: false };
         const sidebarVoiceUsersElement = document.getElementById('voice-sidebar-users');
+        const videoPanelElement = document.getElementById('video-panel');
+        const remoteVideoElements = new Map();
+        let localVideoElement = null;
+
+        function clearVideoPanel() {
+            if (!videoPanelElement) {
+                return;
+            }
+            videoPanelElement.innerHTML = '';
+            remoteVideoElements.clear();
+            localVideoElement = null;
+        }
+
+        function updateCallButtons(state) {
+            currentVoiceState = state;
+            const voiceButton = document.getElementById('btn-room-voice-toggle');
+            const videoButton = document.getElementById('btn-room-video-toggle');
+            const muteButton = document.getElementById('btn-room-mute');
+            const hangupButton = document.getElementById('btn-room-hangup');
+            const status = document.getElementById('voice-status');
+
+            if (!state.connected) {
+                voiceButton.textContent = '🎤 Conectar voz';
+                videoButton.textContent = '📹 Activar cámara';
+                status.textContent = 'No conectado';
+                muteButton.style.display = 'none';
+                hangupButton.style.display = 'none';
+            } else {
+                voiceButton.textContent = state.cameraEnabled ? '🎤 Desconectar' : '🔌 Desconectar voz';
+                videoButton.textContent = state.cameraEnabled ? '📹 Cámara activa' : '📹 Activar cámara';
+                status.textContent = state.cameraEnabled ? 'Cámara activa' : 'Llamada de voz activa';
+                muteButton.style.display = 'inline-flex';
+                hangupButton.style.display = 'inline-flex';
+            }
+        }
+
+        function createVideoCard(id, titleText, stream, muted) {
+            if (!videoPanelElement) {
+                return null;
+            }
+            let wrapper = document.getElementById(id);
+            if (!wrapper) {
+                wrapper = document.createElement('div');
+                wrapper.id = id;
+                wrapper.className = 'video-card';
+
+                const title = document.createElement('div');
+                title.className = 'muted';
+                title.textContent = titleText;
+
+                const video = document.createElement('video');
+                video.autoplay = true;
+                video.playsInline = true;
+                video.muted = muted;
+                video.style.width = '100%';
+                video.style.minHeight = '160px';
+                video.style.objectFit = 'cover';
+                video.style.borderRadius = '14px';
+                video.style.background = '#000';
+
+                wrapper.appendChild(title);
+                wrapper.appendChild(video);
+
+                const controls = document.createElement('div');
+                controls.className = 'call-controls';
+
+                const muteButton = document.createElement('button');
+                muteButton.className = 'btn btn-ghost';
+                muteButton.type = 'button';
+                muteButton.textContent = muted ? '🔇 Silenciado' : '🔇 Silenciar';
+                muteButton.addEventListener('click', () => {
+                    video.muted = !video.muted;
+                    muteButton.textContent = video.muted ? '🔈 Activar audio' : '🔇 Silenciar';
+                });
+
+                const volumeLabel = document.createElement('small');
+                volumeLabel.className = 'muted';
+                volumeLabel.textContent = 'Volumen';
+
+                const volumeInput = document.createElement('input');
+                volumeInput.className = 'volume-slider';
+                volumeInput.type = 'range';
+                volumeInput.min = 0;
+                volumeInput.max = 1;
+                volumeInput.step = 0.05;
+                volumeInput.value = 1;
+                volumeInput.addEventListener('input', () => {
+                    video.volume = Number(volumeInput.value);
+                });
+
+                controls.appendChild(muteButton);
+                controls.appendChild(volumeLabel);
+                controls.appendChild(volumeInput);
+
+                if (!muted) {
+                    wrapper.appendChild(controls);
+                }
+
+                videoPanelElement.appendChild(wrapper);
+            }
+            const video = wrapper.querySelector('video');
+            if (video) {
+                video.srcObject = stream;
+                video.muted = muted;
+                video.volume = 1;
+            }
+            return wrapper;
+        }
+
+        function renderLocalStream(stream, hasCamera) {
+            if (!videoPanelElement) {
+                return;
+            }
+            if (!hasCamera) {
+                if (localVideoElement && localVideoElement.parentElement) {
+                    localVideoElement.parentElement.remove();
+                }
+                localVideoElement = null;
+                return;
+            }
+            const wrapper = createVideoCard('local-video-preview', 'Tu cámara', stream, true);
+            if (wrapper) {
+                localVideoElement = wrapper.querySelector('video');
+            }
+        }
+
+        function renderRemoteStream(alias, stream) {
+            if (!videoPanelElement) {
+                return;
+            }
+            const safeAlias = alias.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const wrapper = createVideoCard(`remote-video-${safeAlias}`, alias, stream, false);
+            if (wrapper) {
+                remoteVideoElements.set(alias, wrapper.querySelector('video'));
+            }
+        }
 
         function renderVoiceUsers(users) {
             if (!sidebarVoiceUsersElement) {
@@ -729,59 +894,98 @@
             sidebarVoiceUsersElement.innerHTML = `Conectados: <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">${users.map((name) => `<span class="channel-badge">${name}</span>`).join('')}</div>`;
         }
 
-        document.getElementById('btn-voice-toggle').addEventListener('click', async function() {
-            if (!voiceChat) {
-                voiceChat = new VoiceChat({
-                    roomName,
-                    alias: displayName,
-                    wsUrl: voiceSocketUrl,
-                    iceServers: webrtcIceServers,
-                    onVoiceStateChange: function(state) {
-                        document.getElementById('btn-mute').style.display = state.connected ? 'inline-block' : 'none';
-                        document.getElementById('btn-voice-toggle').textContent = state.connected ? '🔌 Desconectar' : '🎤 Conectar voz';
-                        document.getElementById('voice-status').textContent = state.connected ? 'Conectado a voz' : '';
-                        if (!state.connected) {
-                            renderVoiceUsers([]);
-                        } else {
-                            renderVoiceUsers(Array.from(voiceChat.voiceUsers.keys()));
-                        }
-                    },
-                    onUserJoin: function() {
-                        renderVoiceUsers(Array.from(voiceChat.voiceUsers.keys()));
-                    },
-                    onUserLeave: function() {
-                        renderVoiceUsers(Array.from(voiceChat.voiceUsers.keys()));
-                    },
-                    onError: function(error) {
-                        alert('Error de voz: ' + error);
-                    }
-                });
+        const voiceButton = document.getElementById('btn-room-voice-toggle');
+        const videoButton = document.getElementById('btn-room-video-toggle');
+        const muteButton = document.getElementById('btn-room-mute');
+        const hangupButton = document.getElementById('btn-room-hangup');
 
-                const connected = await voiceChat.connect();
+        async function createVoiceChat(useCamera = false) {
+            voiceChat = new VoiceChat({
+                roomName,
+                alias: displayName,
+                wsUrl: voiceSocketUrl,
+                iceServers: webrtcIceServers,
+                onLocalStream: function(stream, hasCamera) {
+                    renderLocalStream(stream, hasCamera);
+                },
+                onRemoteStream: function(alias, stream) {
+                    renderRemoteStream(alias, stream);
+                },
+                onVoiceStateChange: function(state) {
+                    updateCallButtons(state);
+                    if (!state.connected) {
+                        renderVoiceUsers([]);
+                        clearVideoPanel();
+                    } else if (voiceChat) {
+                        renderVoiceUsers(Array.from(voiceChat.voiceUsers.keys()));
+                    }
+                },
+                onUserJoin: function() {
+                    if (voiceChat) {
+                        renderVoiceUsers(Array.from(voiceChat.voiceUsers.keys()));
+                    }
+                },
+                onUserLeave: function() {
+                    if (voiceChat) {
+                        renderVoiceUsers(Array.from(voiceChat.voiceUsers.keys()));
+                    }
+                },
+                onError: function(error) {
+                    alert('Error de voz: ' + error);
+                }
+            });
+            return voiceChat.connect(useCamera);
+        }
+
+        voiceButton.addEventListener('click', async function() {
+            if (!voiceChat || !currentVoiceState.connected) {
+                const connected = await createVoiceChat(false);
                 if (!connected) {
                     alert('No se pudo conectar al chat de voz.');
                     voiceChat = null;
                 }
-            } else {
-                voiceChat.disconnect();
+                return;
+            }
+
+            voiceChat.disconnect();
+            voiceChat = null;
+            updateCallButtons({ connected: false, cameraEnabled: false });
+            renderVoiceUsers([]);
+            clearVideoPanel();
+        });
+
+        videoButton.addEventListener('click', async function() {
+            if (currentVoiceState.connected) {
+                alert('Desconecta la llamada actual antes de iniciar otra opción.');
+                return;
+            }
+            const connected = await createVoiceChat(true);
+            if (!connected) {
+                alert('No se pudo iniciar la cámara.');
                 voiceChat = null;
-                document.getElementById('btn-mute').style.display = 'none';
-                document.getElementById('btn-voice-toggle').textContent = '🎤 Conectar voz';
-                document.getElementById('voice-status').textContent = '';
-                renderVoiceUsers([]);
             }
         });
 
-        document.getElementById('btn-mute').addEventListener('click', function() {
+        muteButton.addEventListener('click', function() {
             if (voiceChat) {
                 const muted = voiceChat.toggleMute();
                 this.textContent = muted ? '🔇 Activar' : '🔊 Silenciar';
             }
         });
 
+        hangupButton.addEventListener('click', function() {
+            if (voiceChat) {
+                voiceChat.disconnect();
+                voiceChat = null;
+                updateCallButtons({ connected: false, cameraEnabled: false });
+                renderVoiceUsers([]);
+                clearVideoPanel();
+            }
+        });
+
         document.querySelectorAll('.channel-link').forEach((link) => {
             link.addEventListener('click', (event) => {
-                if (voiceChat && voiceChat.isConnected) {
+                if (currentVoiceState.connected) {
                     event.preventDefault();
                     addSystemMessage('Desconecta la voz manualmente antes de cambiar de canal.');
                 }
