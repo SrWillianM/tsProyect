@@ -4,14 +4,14 @@ import tempfile
 
 from asgiref.sync import async_to_sync
 from channels.testing import WebsocketCommunicator
-from django.test import TestCase, TransactionTestCase, override_settings
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, TransactionTestCase, override_settings
 
-from chat.models import Message, Room, Sticker
+from chat.message_utils import create_message_payload, serialize_message
+from chat.models import Message, Room, Sticker, default_nickname
+from chat.forms import ProfileForm, RoomCreateForm
 from tsProject.asgi import application
-
-
 @override_settings(
     CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 )
@@ -143,6 +143,9 @@ class ChatConsumerTests(TransactionTestCase):
         async_to_sync(scenario)()
 
 
+@override_settings(
+    CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+)
 class ChatApiTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="tester", password="secret12345")
@@ -274,3 +277,90 @@ class ChatApiTests(TestCase):
 
                 self.assertEqual(response.status_code, 200)
                 self.assertFalse(Sticker.objects.filter(id=sticker.id).exists())
+
+
+class ChatLogicUnitTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="tester", password="secret12345")
+        self.room = Room.objects.create(name="General")
+
+    def test_default_nickname_trims_and_limits_length(self):
+        long_username = "  " + "x" * 60 + "  "
+        user = User(username=long_username)
+
+        nickname = default_nickname(user)
+
+        self.assertEqual(len(nickname), 50)
+        self.assertEqual(nickname, "x" * 50)
+
+    def test_default_nickname_falls_back_to_usuario_when_username_is_blank(self):
+        user = User(username="   ")
+
+        self.assertEqual(default_nickname(user), "Usuario")
+
+    def test_room_str_uses_human_readable_kind(self):
+        room = Room.objects.create(name="Voz", kind="voice")
+
+        self.assertEqual(str(room), "Voz: Voz")
+
+    def test_room_create_form_rejects_invalid_kind(self):
+        form = RoomCreateForm(data={"name": "  Sala  ", "kind": "invalid"})
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("kind", form.errors)
+        self.assertEqual(form.errors["kind"][0], "Tipo de canal inválido.")
+
+    def test_profile_form_rejects_blank_nickname(self):
+        form = ProfileForm(data={"nickname": "   "})
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("nickname", form.errors)
+        self.assertEqual(form.errors["nickname"][0], "El apodo es obligatorio.")
+
+    def test_serialize_message_includes_attachment_and_sticker_fields(self):
+        with tempfile.TemporaryDirectory() as media_root:
+            with override_settings(MEDIA_ROOT=media_root):
+                sticker = Sticker.objects.create(
+                    owner=self.user,
+                    name="Sticker Uno",
+                    image=SimpleUploadedFile(
+                        "sticker.png",
+                        b"\x89PNG\r\n\x1a\n",
+                        content_type="image/png",
+                    ),
+                )
+                message = Message.objects.create(
+                    room=self.room,
+                    alias="Ana",
+                    content="",
+                    attachment=SimpleUploadedFile(
+                        "foto.gif",
+                        b"GIF89a",
+                        content_type="image/gif",
+                    ),
+                    attachment_name="foto.gif",
+                    attachment_mime="image/gif",
+                    sticker=sticker,
+                )
+
+                payload = serialize_message(message, source="history")
+
+                self.assertEqual(payload["alias"], "Ana")
+                self.assertEqual(payload["source"], "history")
+                self.assertEqual(payload["attachment_name"], "foto.gif")
+                self.assertTrue(payload["attachment_is_image"])
+                self.assertEqual(payload["sticker_id"], sticker.id)
+                self.assertEqual(payload["sticker_name"], "Sticker Uno")
+
+    def test_create_message_payload_creates_room_and_message(self):
+        payload = create_message_payload(
+            room_name="NuevaSala",
+            alias="Luis",
+            content="Hola equipo",
+        )
+
+        self.assertEqual(payload["alias"], "Luis")
+        self.assertEqual(payload["message"], "Hola equipo")
+        self.assertEqual(payload["source"], "live")
+        self.assertTrue(Room.objects.filter(name="NuevaSala").exists())
+        self.assertEqual(Message.objects.filter(room__name="NuevaSala").count(), 1)

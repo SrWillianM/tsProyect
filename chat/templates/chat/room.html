@@ -9,7 +9,7 @@
         <div>
             <div class="channel-badge">{{ room.get_kind_display }}</div>
             <h1 style="margin-top:10px;">{{ room.name }}</h1>
-            <p class="muted">{% if is_voice_room %}Canal de voz dedicado con cámara opcional.{% else %}Canal de chat con historial y presencia.{% endif %}</p>
+            
             {% if is_voice_room %}
             <div class="call-controls" style="margin-top:10px; gap:8px; align-items:center;">
                 <span class="channel-badge">Chat</span>
@@ -32,7 +32,7 @@
             <p class="muted" id="presence-users">Usuarios activos: -</p>
         </div>
         <div class="channel-box">
-            <span class="muted">Tu mensaje se firma con tu apodo.</span>
+            
         </div>
     </div>
 
@@ -45,57 +45,70 @@
             <input id="chat-file" type="file" hidden>
             <input class="js-sticker-upload" type="file" accept="image/*" hidden>
 
-            <div class="empty-state js-dropzone" style="padding:10px 12px;">Arrastra archivo aquí para enviarlo</div>
-            <div class="empty-state js-file-preview" style="display:none; padding:10px 12px;"></div>
+            <!-- Compact drag + preview zone -->
+            <div class="empty-state js-dropzone" style="padding:8px 10px; font-size:0.85rem;">Arrastra archivo o usa los botones de abajo</div>
+            <div class="empty-state js-file-preview" style="display:none; padding:8px 10px;"></div>
 
-            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                <button class="btn btn-ghost js-btn-attach" type="button">📎 Adjuntar</button>
-                <button class="btn btn-ghost js-clear-file" type="button">🧹 Limpiar archivo</button>
-                <button class="btn btn-ghost js-emoji-toggle" type="button">😀 Emojis</button>
-                <button class="btn btn-ghost js-sticker-toggle" type="button">🖼️ Stickers</button>
-                <small class="muted js-file-name">GIF, imágenes o archivos.</small>
+            <!-- COMPACT ACTION BAR: only 2 icon buttons + dynamic file chip -->
+            <div class="action-bar">
+                <button class="btn btn-ghost icon-btn js-btn-attach" type="button" title="Adjuntar archivo (imagen, GIF, PDF...)">📎</button>
+                <button class="btn btn-ghost icon-btn js-insert-toggle" type="button" title="Emojis y stickers">😀🖼️</button>
+                <span class="js-file-chip file-chip" style="display:none;"></span>
+                <!-- legacy labels kept for compatibility (hidden) -->
+                <small class="muted js-file-name" style="display:none;">GIF, imágenes o archivos.</small>
             </div>
 
-            <div class="empty-state js-picker" style="display:none; gap:10px;">
-                <div>
-                    <strong>Emojis</strong>
-                    <input class="js-emoji-search" type="text" placeholder="Buscar emoji" style="margin-top:8px; max-width:240px;">
-                    <div class="js-emoji-categories" style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"></div>
-                    <div class="js-emoji-grid" style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+            <!-- TABbed picker (much more compact) -->
+            <div class="picker js-picker" style="display:none;">
+                <div class="picker-tabs">
+                    <button type="button" class="picker-tab active" data-tab="emoji">Emojis</button>
+                    <button type="button" class="picker-tab" data-tab="sticker">Stickers</button>
                 </div>
-                <div style="margin-top:8px;">
-                    <strong>Stickers personalizados</strong>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
-                        <input class="js-sticker-name" type="text" placeholder="Nombre sticker" maxlength="60" style="max-width:220px;">
-                        <button class="btn btn-ghost js-sticker-upload-btn" type="button">Guardar sticker</button>
-                        <button class="btn btn-ghost js-sticker-open-upload" type="button">Elegir imagen</button>
+
+                <!-- Emoji tab content (reuses existing classes) -->
+                <div class="tab-emoji" data-content="emoji">
+                    <input class="js-emoji-search" type="text" placeholder="Buscar emoji" style="max-width:100%; margin-bottom:6px; padding:6px 9px;">
+                    <div class="js-emoji-categories" style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:6px;"></div>
+                    <div class="js-emoji-grid picker-grid" style="margin-top:2px;"></div>
+                </div>
+
+                <!-- Sticker tab content -->
+                <div class="tab-sticker" data-content="sticker" style="display:none;">
+                    <div class="sticker-upload-row">
+                        <input class="js-sticker-name" type="text" placeholder="Nombre" maxlength="50" style="flex:1; min-width:120px;">
+                        <button class="btn btn-ghost icon-btn js-sticker-open-upload" type="button" title="Elegir imagen" style="padding:6px 9px;">📁</button>
+                        <button class="btn btn-ghost icon-btn js-sticker-upload-btn" type="button" title="Guardar sticker" style="padding:6px 9px;">💾</button>
                     </div>
-                    <small class="muted js-selected-sticker" style="display:block; margin-top:8px;">Sin sticker seleccionado</small>
-                    <div class="js-sticker-grid" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+                    <small class="muted js-selected-sticker" style="display:block; margin:2px 0 6px;">Sin sticker seleccionado</small>
+                    <div class="js-sticker-grid sticker-grid"></div>
                 </div>
             </div>
         </div>
         <button type="submit">Enviar</button>
     </form>
     {% if is_voice_room %}
-    <section class="card" style="margin-top:16px;">
-        <div id="voice-controls" style="display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap; margin-bottom:12px;">
+    <section class="call-card" style="margin-top:16px; background: linear-gradient(180deg, rgba(16, 23, 37, 0.98), rgba(8, 12, 19, 0.98));">
+        <div style="display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap; margin-bottom:14px;">
             <div>
-                <h2>Control de voz</h2>
-                <p class="muted">Conéctate en voz, o habilita la cámara cuando lo necesites. La sala mantiene chat y audio como el foco principal.</p>
+                <div class="channel-badge">Sala de cámara</div>
+                <h2 style="margin-top:10px;">{{ room.name }}</h2>
+                
+                <div id="voice-sidebar-users" class="muted" style="margin-top:10px;">Conectados: nadie por ahora</div>
             </div>
-            <div class="call-controls" style="justify-content:flex-end;">
-                <button id="btn-room-voice-toggle" class="btn btn-ghost" type="button">🎤 Conectar voz</button>
-                <button id="btn-room-video-toggle" class="btn btn-ghost" type="button">📹 Activar cámara</button>
-                <button id="btn-room-hangup" class="btn btn-warn" type="button" style="display:none;">📴 Colgar</button>
-                <button id="btn-room-mute" class="btn btn-ghost" type="button" style="display:none;">🔇 Silenciar</button>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+                <!-- status badges now live in the compact control bar below -->
             </div>
         </div>
-        <div class="empty-state" style="margin-top:10px;">
-            Las transmisiones aparecen en este panel cuando estás conectado. La opción de cámara está integrada, no la función principal.
+        <div id="video-panel" class="video-grid" style="min-height:56vh; align-content:start; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));"></div>
+        <!-- Compact voice bar (same button IDs kept for JS compatibility) -->
+        <div class="compact-bar" style="margin-top:14px; justify-content:center; gap:6px;">
+            <button id="btn-room-voice-toggle" class="btn btn-ghost icon-btn" type="button" title="Unirse con solo audio">🎤</button>
+            <button id="btn-room-video-toggle" class="btn btn-ghost icon-btn" type="button" title="Unirse con cámara">📹</button>
+            <span id="voice-status" class="channel-badge voice-status">Listo</span>
+            <span id="voice-count" class="channel-badge voice-status">0</span>
+            <button id="btn-room-mute" class="btn btn-ghost icon-btn" type="button" style="display:none;" title="Silenciar mic">🔇</button>
+            <button id="btn-room-hangup" class="btn btn-warn icon-btn" type="button" style="display:none;" title="Salir de la llamada">📴</button>
         </div>
-        <div id="video-panel" class="video-grid" style="margin-top:14px;"></div>
-        <div id="voice-sidebar-users" class="empty-state" style="margin-top:12px;">Conectados: nadie por ahora</div>
     </section>
     {% endif %}
 </section>
@@ -254,12 +267,11 @@
         } = params;
 
         const attachButton = root.querySelector('.js-btn-attach');
-        const clearFileBtn = root.querySelector('.js-clear-file');
-        const fileNameLabel = root.querySelector('.js-file-name');
+        const fileNameLabel = root.querySelector('.js-file-name'); // legacy, hidden
         const filePreview = root.querySelector('.js-file-preview');
+        const fileChip = root.querySelector('.js-file-chip');
         const dropzone = root.querySelector('.js-dropzone');
-        const emojiToggle = root.querySelector('.js-emoji-toggle');
-        const stickerToggle = root.querySelector('.js-sticker-toggle');
+        const insertToggle = root.querySelector('.js-insert-toggle');
         const picker = root.querySelector('.js-picker');
         const emojiSearchInput = root.querySelector('.js-emoji-search');
         const emojiCategories = root.querySelector('.js-emoji-categories');
@@ -275,8 +287,32 @@
 
         function renderFilePreview() {
             const selectedFile = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+
+            // legacy label (hidden in new UI)
             if (fileNameLabel) {
                 fileNameLabel.textContent = selectedFile ? selectedFile.name : 'GIF, imágenes o archivos.';
+            }
+
+            // Compact removable chip (new)
+            if (fileChip) {
+                if (!selectedFile) {
+                    fileChip.style.display = 'none';
+                    fileChip.innerHTML = '';
+                } else {
+                    fileChip.style.display = 'inline-flex';
+                    fileChip.innerHTML = `
+                        <span class="chip-name">${escapeHtml(selectedFile.name)}</span>
+                        <span class="chip-x" title="Quitar archivo">✕</span>
+                    `;
+                    const x = fileChip.querySelector('.chip-x');
+                    if (x) {
+                        x.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            fileInput.value = '';
+                            renderFilePreview();
+                        });
+                    }
+                }
             }
 
             if (!selectedFile) {
@@ -294,10 +330,10 @@
 
             if (selectedFile.type && selectedFile.type.startsWith('image/')) {
                 const image = document.createElement('img');
-                image.style.maxWidth = '180px';
-                image.style.maxHeight = '180px';
-                image.style.borderRadius = '12px';
-                image.style.marginTop = '8px';
+                image.style.maxWidth = '160px';
+                image.style.maxHeight = '120px';
+                image.style.borderRadius = '10px';
+                image.style.marginTop = '6px';
                 image.alt = selectedFile.name;
                 image.src = URL.createObjectURL(selectedFile);
                 filePreview.appendChild(image);
@@ -355,9 +391,8 @@
             filtered.forEach((emoji) => {
                 const button = document.createElement('button');
                 button.type = 'button';
-                button.className = 'btn btn-ghost';
+                button.className = 'btn btn-ghost emoji-btn';
                 button.textContent = emoji;
-                button.style.padding = '6px 10px';
                 button.addEventListener('click', () => {
                     messageInput.value = `${messageInput.value || ''}${emoji}`;
                     messageInput.focus();
@@ -375,7 +410,8 @@
                 button.type = 'button';
                 button.className = `btn ${groupKey === activeEmojiGroup ? '' : 'btn-ghost'}`;
                 button.textContent = EMOJI_GROUP_LABELS[groupKey] || groupKey;
-                button.style.padding = '6px 10px';
+                button.style.padding = '4px 8px';
+                button.style.fontSize = '0.78rem';
                 button.addEventListener('click', () => {
                     activeEmojiGroup = groupKey;
                     renderEmojiCategories();
@@ -404,18 +440,17 @@
 
             stickers.forEach((sticker) => {
                 const tile = document.createElement('div');
-                tile.style.position = 'relative';
-                tile.style.display = 'inline-flex';
-                tile.style.flexDirection = 'column';
-                tile.style.alignItems = 'center';
-                tile.style.gap = '6px';
+                tile.className = 'sticker-tile';
 
                 const button = document.createElement('button');
                 button.type = 'button';
                 button.className = 'btn btn-ghost';
-                button.style.padding = '6px';
+                button.style.padding = '2px';
+                button.style.border = 'none';
+                button.style.background = 'transparent';
                 button.title = sticker.name;
-                button.innerHTML = `<img src="${sticker.url}" alt="${escapeHtml(sticker.name)}" style="width:48px;height:48px;object-fit:cover;border-radius:10px;">`;
+                button.innerHTML = `<img src="${sticker.url}" alt="${escapeHtml(sticker.name)}">`;
+
                 button.addEventListener('click', () => {
                     selectedSticker = sticker;
                     fileInput.value = '';
@@ -423,13 +458,12 @@
                     selectedStickerInfo.textContent = `Sticker: ${sticker.name}`;
                 });
 
-                const deleteButton = document.createElement('button');
-                deleteButton.type = 'button';
-                deleteButton.className = 'btn btn-ghost';
-                deleteButton.textContent = 'Eliminar';
-                deleteButton.style.padding = '4px 8px';
-                deleteButton.style.fontSize = '0.75rem';
-                deleteButton.addEventListener('click', async (event) => {
+                const del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'sticker-del';
+                del.textContent = '×';
+                del.title = 'Eliminar sticker';
+                del.addEventListener('click', async (event) => {
                     event.stopPropagation();
                     try {
                         await deleteSticker(sticker);
@@ -439,7 +473,7 @@
                 });
 
                 tile.appendChild(button);
-                tile.appendChild(deleteButton);
+                tile.appendChild(del);
                 stickerGrid.appendChild(tile);
             });
         }
@@ -504,19 +538,21 @@
             resetSticker();
         }
 
-        attachButton.addEventListener('click', () => fileInput.click());
-        clearFileBtn.addEventListener('click', () => {
-            fileInput.value = '';
-            renderFilePreview();
-        });
-        stickerUploadOpenBtn.addEventListener('click', () => stickerUploadInput.click());
-        stickerUploadButton.addEventListener('click', async () => {
-            try {
-                await uploadSticker();
-            } catch (error) {
-                addSystemMessage(error.message || 'No se pudo guardar el sticker.');
-            }
-        });
+        if (attachButton) {
+            attachButton.addEventListener('click', () => fileInput.click());
+        }
+        if (stickerUploadOpenBtn) {
+            stickerUploadOpenBtn.addEventListener('click', () => stickerUploadInput.click());
+        }
+        if (stickerUploadButton) {
+            stickerUploadButton.addEventListener('click', async () => {
+                try {
+                    await uploadSticker();
+                } catch (error) {
+                    addSystemMessage(error.message || 'No se pudo guardar el sticker.');
+                }
+            });
+        }
 
         fileInput.addEventListener('change', () => {
             resetSticker();
@@ -551,19 +587,54 @@
             renderEmojiGroup(activeEmojiGroup);
         });
 
-        emojiToggle.addEventListener('click', () => {
-            picker.style.display = picker.style.display === 'none' ? 'grid' : 'none';
-            renderEmojiGroup(activeEmojiGroup);
-        });
+        // Tab switching inside picker
+        function showPickerTab(which) {
+            const emojiPane = picker.querySelector('[data-content="emoji"]');
+            const stickerPane = picker.querySelector('[data-content="sticker"]');
+            const tabs = picker.querySelectorAll('.picker-tab');
 
-        stickerToggle.addEventListener('click', async () => {
-            picker.style.display = 'grid';
-            try {
-                await loadStickers();
-            } catch (error) {
-                addSystemMessage(error.message || 'No se pudieron cargar stickers.');
+            if (which === 'sticker') {
+                if (emojiPane) emojiPane.style.display = 'none';
+                if (stickerPane) stickerPane.style.display = '';
+                tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === 'sticker'));
+            } else {
+                if (emojiPane) emojiPane.style.display = '';
+                if (stickerPane) stickerPane.style.display = 'none';
+                tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === 'emoji'));
             }
-        });
+        }
+
+        // Single compact "insert" button (replaces old emoji + sticker separate buttons)
+        if (insertToggle) {
+            insertToggle.addEventListener('click', async () => {
+                const isHidden = picker.style.display === 'none' || !picker.style.display;
+                if (isHidden) {
+                    picker.style.display = 'block';
+                    showPickerTab('emoji');          // default to emojis
+                    renderEmojiGroup(activeEmojiGroup);
+                    try {
+                        await loadStickers();        // preload stickers in background
+                    } catch (_) {}
+                } else {
+                    picker.style.display = 'none';
+                }
+            });
+        }
+
+        // Click handlers for the tab buttons themselves
+        if (picker) {
+            picker.querySelectorAll('.picker-tab').forEach(tab => {
+                tab.addEventListener('click', async () => {
+                    const target = tab.dataset.tab;
+                    showPickerTab(target);
+                    if (target === 'sticker') {
+                        try { await loadStickers(); } catch (_) {}
+                    } else {
+                        renderEmojiGroup(activeEmojiGroup);
+                    }
+                });
+            });
+        }
 
         chatForm.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -766,19 +837,22 @@
             const muteButton = document.getElementById('btn-room-mute');
             const hangupButton = document.getElementById('btn-room-hangup');
             const status = document.getElementById('voice-status');
+            const countEl = document.getElementById('voice-count');
 
             if (!state.connected) {
-                voiceButton.textContent = '🎤 Conectar voz';
-                videoButton.textContent = '📹 Activar cámara';
-                status.textContent = 'No conectado';
-                muteButton.style.display = 'none';
-                hangupButton.style.display = 'none';
+                if (voiceButton) voiceButton.textContent = '🎤';
+                if (videoButton) videoButton.textContent = '📹';
+                if (status) status.textContent = 'Listo';
+                if (countEl) countEl.textContent = '0';
+                if (muteButton) muteButton.style.display = 'none';
+                if (hangupButton) hangupButton.style.display = 'none';
             } else {
-                voiceButton.textContent = state.cameraEnabled ? '🎤 Desconectar' : '🔌 Desconectar voz';
-                videoButton.textContent = state.cameraEnabled ? '📹 Cámara activa' : '📹 Activar cámara';
-                status.textContent = state.cameraEnabled ? 'Cámara activa' : 'Llamada de voz activa';
-                muteButton.style.display = 'inline-flex';
-                hangupButton.style.display = 'inline-flex';
+                if (voiceButton) voiceButton.textContent = '⏹️';
+                if (videoButton) videoButton.textContent = state.cameraEnabled ? '📹✓' : '📹';
+                if (status) status.textContent = state.cameraEnabled ? 'Cámara' : 'Voz';
+                if (countEl) countEl.textContent = (state.userCount || 0) + '';
+                if (muteButton) muteButton.style.display = 'inline-flex';
+                if (hangupButton) hangupButton.style.display = 'inline-flex';
             }
         }
 
@@ -801,7 +875,7 @@
                 video.playsInline = true;
                 video.muted = muted;
                 video.style.width = '100%';
-                video.style.minHeight = '160px';
+                video.style.minHeight = '240px';
                 video.style.objectFit = 'cover';
                 video.style.borderRadius = '14px';
                 video.style.background = '#000';
@@ -809,39 +883,35 @@
                 wrapper.appendChild(title);
                 wrapper.appendChild(video);
 
-                const controls = document.createElement('div');
-                controls.className = 'call-controls';
-
-                const muteButton = document.createElement('button');
-                muteButton.className = 'btn btn-ghost';
-                muteButton.type = 'button';
-                muteButton.textContent = muted ? '🔇 Silenciado' : '🔇 Silenciar';
-                muteButton.addEventListener('click', () => {
-                    video.muted = !video.muted;
-                    muteButton.textContent = video.muted ? '🔈 Activar audio' : '🔇 Silenciar';
-                });
-
-                const volumeLabel = document.createElement('small');
-                volumeLabel.className = 'muted';
-                volumeLabel.textContent = 'Volumen';
-
-                const volumeInput = document.createElement('input');
-                volumeInput.className = 'volume-slider';
-                volumeInput.type = 'range';
-                volumeInput.min = 0;
-                volumeInput.max = 1;
-                volumeInput.step = 0.05;
-                volumeInput.value = 1;
-                volumeInput.addEventListener('input', () => {
-                    video.volume = Number(volumeInput.value);
-                });
-
-                controls.appendChild(muteButton);
-                controls.appendChild(volumeLabel);
-                controls.appendChild(volumeInput);
-
+                // Compact per-video controls (much less visual noise)
                 if (!muted) {
-                    wrapper.appendChild(controls);
+                    const mini = document.createElement('div');
+                    mini.className = 'video-mini-ctrl';
+
+                    const vol = document.createElement('input');
+                    vol.type = 'range';
+                    vol.min = '0';
+                    vol.max = '1';
+                    vol.step = '0.05';
+                    vol.value = '1';
+                    vol.style.width = '68px';
+                    vol.style.height = '4px';
+                    vol.addEventListener('input', () => { video.volume = Number(vol.value); });
+
+                    const mBtn = document.createElement('button');
+                    mBtn.type = 'button';
+                    mBtn.className = 'btn btn-ghost';
+                    mBtn.style.padding = '1px 5px';
+                    mBtn.style.fontSize = '0.72rem';
+                    mBtn.textContent = '🔇';
+                    mBtn.addEventListener('click', () => {
+                        video.muted = !video.muted;
+                        mBtn.textContent = video.muted ? '🔈' : '🔇';
+                    });
+
+                    mini.appendChild(mBtn);
+                    mini.appendChild(vol);
+                    wrapper.appendChild(mini);
                 }
 
                 videoPanelElement.appendChild(wrapper);
@@ -887,11 +957,18 @@
             if (!sidebarVoiceUsersElement) {
                 return;
             }
+            const voiceCountElement = document.getElementById('voice-count');
             if (!users || !users.length) {
                 sidebarVoiceUsersElement.textContent = 'Conectados: nadie por ahora';
+                if (voiceCountElement) {
+                    voiceCountElement.textContent = '0';
+                }
                 return;
             }
             sidebarVoiceUsersElement.innerHTML = `Conectados: <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">${users.map((name) => `<span class="channel-badge">${name}</span>`).join('')}</div>`;
+            if (voiceCountElement) {
+                voiceCountElement.textContent = `${users.length}`;
+            }
         }
 
         const voiceButton = document.getElementById('btn-room-voice-toggle');
@@ -912,6 +989,9 @@
                     renderRemoteStream(alias, stream);
                 },
                 onVoiceStateChange: function(state) {
+                    if (voiceChat && state.connected) {
+                        state.userCount = voiceChat.voiceUsers ? voiceChat.voiceUsers.size : 0;
+                    }
                     updateCallButtons(state);
                     if (!state.connected) {
                         renderVoiceUsers([]);
@@ -969,7 +1049,7 @@
         muteButton.addEventListener('click', function() {
             if (voiceChat) {
                 const muted = voiceChat.toggleMute();
-                this.textContent = muted ? '🔇 Activar' : '🔊 Silenciar';
+                this.textContent = muted ? '🔊' : '🔇';
             }
         });
 

@@ -189,7 +189,7 @@ class VoiceSignalingConsumer(AsyncWebsocketConsumer):
         user_data = json.dumps(
             {
                 "connected": True,
-                "muted": True,  # Por defecto muteado hasta que active el micrófono
+                "muted": False,
             }
         )
         r.hset(key, alias, user_data)

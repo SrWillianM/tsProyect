@@ -172,6 +172,9 @@ class VoiceChat {
         console.log('[Voice] Recibida lista de usuarios en voz:', users);
         this.voiceUsers.clear();
         users.forEach(user => {
+            if (user.alias === this.alias) {
+                return;
+            }
             this.voiceUsers.set(user.alias, {
                 connected: true,
                 muted: user.muted || false
@@ -275,6 +278,10 @@ class VoiceChat {
      * Manejar señal recibida (offer/answer/ice-candidate)
      */
     _handleSignal(from, type, signal) {
+        if (from === this.alias) {
+            return;
+        }
+
         // Ignorar señales que no son WebRTC reales
         if (type === 'join' || type === 'leave' || type === 'mute_status') {
             console.log('[Voice] Ignorando señal no-WebRTC:', type);

@@ -19,6 +19,11 @@ class SignUpForm(UserCreationForm):
 
 
 class ProfileForm(forms.ModelForm):
+    nickname = forms.CharField(
+        max_length=50,
+        error_messages={"required": "El apodo es obligatorio."},
+    )
+
     class Meta:
         model = Profile
         fields = ("nickname", "avatar")
@@ -35,6 +40,15 @@ class ProfileForm(forms.ModelForm):
 
 
 class RoomCreateForm(forms.ModelForm):
+    name = forms.CharField(
+        max_length=100,
+        error_messages={"required": "El nombre es obligatorio."},
+    )
+    kind = forms.ChoiceField(
+        choices=ChannelKind.choices,
+        error_messages={"invalid_choice": "Tipo de canal inválido."},
+    )
+
     class Meta:
         model = Room
         fields = ("name", "kind")

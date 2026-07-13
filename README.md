@@ -2,6 +2,20 @@
 
 Base de backend para clon tipo TeamSpeak usando Django + Channels.
 
+# para conectarse a travez de ngrok
+Después de hacer los cambios:
+Guarda los archivos.
+Cierra todo (Ctrl + C en Django y ngrok).
+ Reinicia:PowerShell
+
+ 	python manage.py runserver 0.0.0.0:8000
+
+(Otra terminal)PowerShell
+
+	ngrok http 8000
+
+Abre la nueva URL de ngrok desde el celular y desde tu PC.
+
 ## Requisitos
 
 - Python 3.13+

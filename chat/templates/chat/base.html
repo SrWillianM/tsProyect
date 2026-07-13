@@ -386,6 +386,177 @@
                 padding: 12px;
             }
         }
+
+        /* === COMPACT UI OPTIMIZATIONS === */
+        .action-bar {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .icon-btn {
+            padding: 8px 11px;
+            font-size: 1.05rem;
+            line-height: 1;
+            min-width: 38px;
+            justify-content: center;
+        }
+
+        .file-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--line);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            color: var(--muted);
+            max-width: 220px;
+        }
+
+        .file-chip .chip-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 140px;
+        }
+
+        .file-chip .chip-x {
+            cursor: pointer;
+            padding: 0 4px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .picker {
+            border: 1px solid var(--line);
+            background: var(--panel-soft);
+            border-radius: 14px;
+            padding: 10px;
+            margin-top: 8px;
+        }
+
+        .picker-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 6px;
+        }
+
+        .picker-tab {
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--muted);
+            cursor: pointer;
+        }
+
+        .picker-tab.active {
+            background: rgba(94,234,212,0.12);
+            color: var(--accent);
+            border-color: rgba(94,234,212,0.3);
+        }
+
+        .picker-grid {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .emoji-btn {
+            padding: 5px 7px;
+            font-size: 1.15rem;
+            line-height: 1;
+        }
+
+        .sticker-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+            gap: 6px;
+            max-width: 100%;
+        }
+
+        .sticker-tile {
+            position: relative;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .sticker-tile img {
+            width: 44px;
+            height: 44px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+        }
+
+        .sticker-del {
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            width: 16px;
+            height: 16px;
+            line-height: 14px;
+            font-size: 10px;
+            padding: 0;
+            border-radius: 50%;
+            background: rgba(245, 158, 11, 0.9);
+            color: #111;
+            border: none;
+            cursor: pointer;
+            font-weight: 800;
+        }
+
+        .sticker-upload-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .sticker-upload-row input[type="text"] {
+            max-width: 160px;
+            padding: 6px 9px;
+            font-size: 0.85rem;
+        }
+
+        .compact-bar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            border: 1px solid var(--line);
+        }
+
+        .voice-status {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 999px;
+        }
+
+        .video-mini-ctrl {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            padding: 3px 6px;
+            font-size: 0.7rem;
+        }
+
+        .video-mini-ctrl button {
+            padding: 1px 5px;
+            font-size: 0.72rem;
+        }
     </style>
 </head>
 <body>
@@ -422,19 +593,7 @@
                     </div>
                 {% endif %}
 
-                {% if is_voice_room %}
-                    <div class="channel-box" style="display:grid; gap:12px;">
-                        <div>
-                            <div class="muted">Voz</div>
-                            <strong>Este canal ofrece voz y video opcional</strong>
-                        </div>
-                        <p class="muted">Activa tu cámara cuando quieras; los controles de voz y video están dentro de la sala.</p>
-                        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-                            <a class="btn btn-ghost" href="#voice-controls">Ir a controles</a>
-                            <a class="btn btn-ghost" href="#chat-form">Ir al chat</a>
-                        </div>
-                    </div>
-                {% endif %}
+                
 
                 <div class="channel-group">
                     <h3>Canales de chat</h3>
